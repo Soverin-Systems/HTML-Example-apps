@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<title>XHE Network v3 • P2P + Arbitrum One</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inconsolata:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --void: #000000;
+  --deep: #0a0e1a;
+  --surface: #141b2d;
+  --surface-high: #1a2332;
+  --border: #2a3447;
+  --border-bright: #3a4557;
+  --text: #e8edf5;
+  --text-dim: #8b95a8;
+  --cyan: #00ffff;
+  --cyan-dim: #00aaaa;
+  --magenta: #ff00ff;
+  --yellow: #ffff00;
+  --green: #00ff88;
+  --red: #ff3366;
+  --orange: #ff9933;
+  --arbitrum-blue: #28a0f0;
+  --glow-cyan: 0 0 20px rgba(0,255,255,0.5);
+  --glow-magenta: 0 0 20px rgba(255,0,255,0.5);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--void);
+  color: var(--text);
+  font-family: 'Inconsolata', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#grid-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+  opacity: 0.3;
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 0 2rem;
+  border-bottom: 2px solid var(--border-bright);
+  margin-bottom: 2rem;
+}
+
+h1 {
+  font-family: 'Orbitron', monospace;
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, var(--cyan), var(--arbitrum-blue), var(--magenta));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: titlePulse 3s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.status-bar {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-label {
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+.status-value {
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.status-value.connected {
+  color: var(--green);
+}
+
+.status-value.warning {
+  color: var(--orange);
+}
+
+.status-value.error {
+  color: var(--red);
+}
+
+.pulse-indicator {
+  width: 8px;
+  height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+  box-shadow: var(--glow-cyan);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--arbitrum-blue), var(--magenta));
+  opacity: 0.6;
+}
+
+.card-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--cyan);
+  margin-bottom: 1rem;
+}
+
+.wallet-status {
+  background: var(--deep);
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.wallet-address {
+  font-family: 'Inconsolata', monospace;
+  font-size: 0.8rem;
+  word-break: break-all;
+  color: var(--arbitrum-blue);
+  margin-top: 0.5rem;
+}
+
+.balance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.balance-box {
+  text-align: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(0,255,255,0.1), rgba(40,160,240,0.1));
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.balance-amount {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--green);
+  text-shadow: var(--glow-cyan);
+}
+
+.balance-label {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 0.5rem;
+}
+
+.chain-badge {
+  display: inline-block;
+  background: var(--arbitrum-blue);
+  color: var(--void);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+.info-box {
+  background: var(--deep);
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  margin-top: 1rem;
+  font-size: 0.8rem;
+}
+
+.info-box .label {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.info-box .value {
+  color: var(--cyan);
+  font-family: 'Inconsolata', monospace;
+  word-break: break-all;
+}
+
+.peer-list {
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 0.75rem;
+}
+
+.peer-item {
+  padding: 0.5rem;
+  background: rgba(0,255,255,0.05);
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+  font-family: 'Inconsolata', monospace;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.peer-item .peer-type {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  padding: 0.75rem 1rem;
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: var(--border);
+  border-color: var(--cyan);
+  transform: translateX(4px);
+}
+
+.nav-item.active {
+  background: linear-gradient(135deg, var(--cyan), var(--arbitrum-blue));
+  color: var(--void);
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.content-area {
+  min-height: 600px;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+label {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 0.9rem;
+  background: var(--deep);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'Inconsolata', monospace;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--arbitrum-blue);
+  box-shadow: 0 0 0 2px rgba(40,160,240,0.2);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+button {
+  padding: 0.9rem 1.5rem;
+  background: linear-gradient(135deg, var(--cyan), var(--arbitrum-blue));
+  color: var(--void);
+  border: none;
+  border-radius: 6px;
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40,160,240,0.6);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+button.secondary {
+  background: var(--surface-high);
+  color: var(--text);
+  border: 1px solid var(--border-bright);
+}
+
+button.danger {
+  background: linear-gradient(135deg, var(--red), #cc0033);
+}
+
+button.wallet-connect {
+  background: linear-gradient(135deg, var(--arbitrum-blue), #1f7fcf);
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.post-item, .channel-item, .app-item {
+  background: var(--surface-high);
+  border-left: 3px solid var(--cyan);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.post-item.on-chain {
+  border-left-color: var(--arbitrum-blue);
+}
+
+.post-item.on-chain::after {
+  content: '⛓ ON-CHAIN';
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: var(--arbitrum-blue);
+  font-weight: bold;
+  font-size: 0.7rem;
+  background: rgba(40, 160, 240, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.post-item.verified::after {
+  content: '✓ SIGNED';
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: var(--green);
+  font-weight: bold;
+  font-size: 0.7rem;
+  background: rgba(0, 255, 136, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.post-header, .channel-header, .app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.post-type, .post-badge {
+  background: var(--cyan);
+  color: var(--void);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.nft-badge {
+  background: var(--magenta);
+  color: var(--void);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.arbitrum-badge {
+  background: var(--arbitrum-blue);
+  color: var(--void);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.post-content, .channel-content {
+  color: var(--text);
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.post-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  flex-wrap: wrap;
+}
+
+.tx-link {
+  color: var(--arbitrum-blue);
+  text-decoration: none;
+  font-size: 0.75rem;
+  border-bottom: 1px dashed var(--arbitrum-blue);
+}
+
+.tx-link:hover {
+  color: var(--cyan);
+}
+
+.log-entry {
+  background: var(--surface-high);
+  padding: 0.75rem;
+  border-left: 2px solid var(--border-bright);
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  font-family: 'Inconsolata', monospace;
+}
+
+.log-success {
+  border-left-color: var(--green);
+}
+
+.log-error {
+  border-left-color: var(--red);
+}
+
+.log-warning {
+  border-left-color: var(--orange);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--surface);
+  border: 2px solid var(--border-bright);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.2rem;
+  color: var(--cyan);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.modal-buttons button {
+  flex: 1;
+}
+
+.gas-estimate {
+  background: rgba(40, 160, 240, 0.1);
+  border: 1px solid var(--arbitrum-blue);
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+}
+
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  animation: slideIn 0.3s;
+  z-index: 1000;
+  max-width: 400px;
+}
+
+.toast.success {
+  border-left: 4px solid var(--green);
+}
+
+.toast.error {
+  border-left: 4px solid var(--red);
+}
+
+.toast.info {
+  border-left: 4px solid var(--cyan);
+}
+
+.toast.warning {
+  border-left: 4px solid var(--orange);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.contract-addresses {
+  background: var(--deep);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+
+.contract-addresses .address-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.contract-addresses .address-value {
+  font-family: 'Inconsolata', monospace;
+  color: var(--arbitrum-blue);
+  font-size: 0.7rem;
+}
+
+@media (max-width: 768px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  h1 {
+    font-size: 1.8rem;
+  }
+  
+  .status-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .balance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="grid-bg"></div>
+
+<div class="container">
+  <header>
+    <h1>⬢ XHE NETWORK</h1>
+    <div class="status-bar">
+      <div class="status-item">
+        <div class="pulse-indicator"></div>
+        <span class="status-label">P2P</span>
+        <span class="status-value" id="p2p-status">CONNECTING</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Chain</span>
+        <span class="status-value" id="chain-status">DISCONNECTED</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Peers</span>
+        <span class="status-value" id="peer-count">0</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="card">
+        <div class="card-title">⬡ Wallet</div>
+        
+        <div id="wallet-disconnected" class="wallet-status">
+          <div style="text-align: center; color: var(--text-dim); margin-bottom: 1rem;">
+            Connect via Remix IDE or Web3 wallet
+          </div>
+          <button class="wallet-connect" onclick="connectWallet()">
+            Connect Wallet
+          </button>
+          <div style="font-size: 0.7rem; color: var(--text-dim); text-align: center; margin-top: 0.75rem;">
+            Works best in Remix IDE Desktop
+          </div>
+        </div>
+
+        <div id="wallet-connected" class="wallet-status hidden">
+          <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.25rem;">
+            CONNECTED ADDRESS
+          </div>
+          <div class="wallet-address" id="wallet-address">0x...</div>
+          <div class="chain-badge">Arbitrum One</div>
+        </div>
+        
+        <div class="balance-grid">
+          <div class="balance-box">
+            <div class="balance-amount" id="xhe-balance">0</div>
+            <div class="balance-label">XHE Token</div>
+          </div>
+          <div class="balance-box">
+            <div class="balance-amount" id="eth-balance">0</div>
+            <div class="balance-label">ETH</div>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="secondary" onclick="showFaucetModal()">Faucet</button>
+          <button class="secondary" onclick="addTokenToWallet()">Add Token</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⬡ Connected Peers</div>
+        <div style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem;">
+          P2P via libp2p
+        </div>
+        <div class="peer-list" id="peer-list">Discovering peers...</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⬡ Navigation</div>
+        <div class="nav-menu">
+          <div class="nav-item active" onclick="switchView('network', event)">Network Feed</div>
+          <div class="nav-item" onclick="switchView('publish', event)">Publish</div>
+          <div class="nav-item" onclick="switchView('nft', event)">NFT Marketplace</div>
+          <div class="nav-item" onclick="switchView('contracts', event)">Smart Contracts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT AREA -->
+    <div class="content-area">
+      
+      <!-- NETWORK FEED VIEW -->
+      <div id="view-network" class="view active">
+        <div class="card">
+          <div class="card-title">⬢ Live Network Feed</div>
+          <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">
+            Hybrid P2P + On-chain • ⛓ = Arbitrum verified • ✓ = Signed
+          </div>
+          <div id="network-feed">
+            <div style="color: var(--text-dim); padding: 2rem; text-align: center;">
+              No content yet. Connect your wallet and publish something!
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PUBLISH VIEW -->
+      <div id="view-publish" class="view">
+        <div class="card">
+          <div class="card-title">⬢ Publish Content On-Chain</div>
+          
+          <div class="input-group">
+            <label>Content Type</label>
+            <select id="content-type">
+              <option value="post">Post</option>
+              <option value="article">Article</option>
+              <option value="data">Data</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label>Content</label>
+            <textarea id="content-body" placeholder="Enter your content..."></textarea>
+          </div>
+
+          <div class="input-group">
+            <label>Price to Access (XHE)</label>
+            <input type="number" id="content-price" min="0" step="0.01" value="0" placeholder="0 = Free">
+          </div>
+
+          <div class="gas-estimate">
+            <strong>📊 Estimate:</strong> ~0.0001 ETH gas fee on Arbitrum One
+          </div>
+
+          <button onclick="publishContent()" id="publish-btn">
+            Publish to Arbitrum
+          </button>
+        </div>
+      </div>
+
+      <!-- NFT VIEW -->
+      <div id="view-nft" class="view">
+        <div class="card">
+          <div class="card-title">⬢ Mint NFT License (ERC-721)</div>
+          
+          <div class="input-group">
+            <label>NFT Name</label>
+            <input type="text" id="nft-name" placeholder="Premium Access Pass">
+          </div>
+
+          <div class="input-group">
+            <label>Description</label>
+            <textarea id="nft-description" placeholder="This NFT grants..."></textarea>
+          </div>
+
+          <div class="input-group">
+            <label>License Type</label>
+            <select id="nft-license-type">
+              <option value="access">Access License</option>
+              <option value="content">Content License</option>
+              <option value="creator">Creator License</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label>Initial Supply</label>
+            <input type="number" id="nft-supply" min="1" value="10">
+          </div>
+
+          <div class="gas-estimate">
+            <strong>📊 Estimate:</strong> ~0.0005 ETH to mint on Arbitrum One
+          </div>
+
+          <button onclick="mintNFT()" id="mint-btn">
+            Mint NFT Collection
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⬢ My NFTs</div>
+          <div id="nft-list">
+            <div style="color: var(--text-dim); padding: 1rem;">
+              Connect wallet to view your NFTs
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTRACTS VIEW -->
+      <div id="view-contracts" class="view">
+        <div class="card">
+          <div class="card-title">⬢ Smart Contract Information</div>
+          
+          <div class="contract-addresses">
+            <div class="address-item">
+              <span><strong>XHE Token (ERC-20):</strong></span>
+              <span class="address-value" id="token-address">Deploying...</span>
+            </div>
+            <div class="address-item">
+              <span><strong>Content Registry:</strong></span>
+              <span class="address-value" id="content-address">Deploying...</span>
+            </div>
+            <div class="address-item">
+              <span><strong>NFT License (ERC-721):</strong></span>
+              <span class="address-value" id="nft-address">Deploying...</span>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <div class="label">Network</div>
+            <div class="value">Arbitrum One (Chain ID: 42161)</div>
+          </div>
+
+          <div class="info-box">
+            <div class="label">Block Explorer</div>
+            <div class="value">
+              <a href="https://arbiscan.io" target="_blank" class="tx-link">arbiscan.io</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⬢ Architecture</div>
+          <div class="log-entry log-success">
+            <strong>✓ Remix IDE Compatible:</strong> Built-in wallet support when opened in Remix Desktop
+          </div>
+          <div class="log-entry log-success">
+            <strong>✓ Hybrid Design:</strong> Content hash anchored on-chain, full data on P2P/IPFS
+          </div>
+          <div class="log-entry log-success">
+            <strong>✓ ERC-20 XHE Token:</strong> Real value token for payments and rewards
+          </div>
+          <div class="log-entry log-success">
+            <strong>✓ ERC-721 NFTs:</strong> Provable ownership and transferability
+          </div>
+          <div class="log-entry log-success">
+            <strong>✓ Low Gas Fees:</strong> Arbitrum One L2 - ~100x cheaper than Ethereum mainnet
+          </div>
+          <div class="log-entry log-warning">
+            <strong>⚠ Testnet Mode:</strong> Deploy to Arbitrum Sepolia for testing first
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⬢ Contract Source Code</div>
+          <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">
+            Open-source Solidity contracts - verify on Arbiscan
+          </div>
+          <div class="action-buttons">
+            <button class="secondary" onclick="viewContractCode('token')">XHE Token</button>
+            <button class="secondary" onclick="viewContractCode('content')">Content</button>
+            <button class="secondary" onclick="viewContractCode('nft')">NFT</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<div id="faucet-modal" class="modal hidden" onclick="if(event.target === this) closeFaucetModal()">
+  <div class="modal-content">
+    <div class="modal-header">🚰 XHE Token Faucet</div>
+    <div style="color: var(--text-dim); margin-bottom: 1rem; font-size: 0.9rem;">
+      Get test XHE tokens to try the network. Real tokens coming soon!
+    </div>
+    <div class="input-group">
+      <label>Amount (XHE)</label>
+      <input type="number" id="faucet-amount" value="100" min="1" max="1000">
+    </div>
+    <div class="gas-estimate">
+      <strong>Note:</strong> You'll need a small amount of ETH for gas fees
+    </div>
+    <div class="modal-buttons">
+      <button onclick="event.stopPropagation(); claimFromFaucet()">Claim Tokens</button>
+      <button class="secondary" onclick="event.stopPropagation(); closeFaucetModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="contract-code-modal" class="modal hidden">
+  <div class="modal-content" style="max-width: 700px;" onclick="event.stopPropagation()">
+    <div class="modal-header" id="contract-modal-title">Contract Source</div>
+    <pre id="contract-code-content" style="background: var(--deep); padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.75rem; line-height: 1.4;"></pre>
+    <div class="modal-buttons">
+      <button class="secondary" onclick="window.closeContractCodeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Add click listener for modal backdrop
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('contract-code-modal');
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        window.closeContractCodeModal();
+      }
+    });
+  }
+});
+</script>
+
+<!-- Load viem for Ethereum interactions -->
+<script type="module">
+import { createPublicClient, createWalletClient, custom, http, parseEther, formatEther } from 'https://esm.sh/viem@2'
+import { arbitrum, arbitrumSepolia } from 'https://esm.sh/viem@2/chains'
+
+// Make available globally
+window.viem = {
+  createPublicClient,
+  createWalletClient,
+  custom,
+  http,
+  parseEther,
+  formatEther,
+  arbitrum,
+  arbitrumSepolia
+};
+
+console.log('✓ Viem loaded');
+</script>
+
+<script type="module">
+// Import IPFS/Helia modules
+import { createHelia } from 'https://esm.sh/helia@4'
+import { unixfs } from 'https://esm.sh/@helia/unixfs@3'
+import { CID } from 'https://esm.sh/multiformats@13/cid'
+
+// Make available globally
+window.createHelia = createHelia;
+window.unixfs = unixfs;
+window.CID = CID;
+window.heliaNode = null;
+window.heliaFS = null;
+window.ipfsReady = false;
+
+console.log('✓ IPFS modules loaded');
+</script>
+
+<script>
+// ============================================================================
+// XHE NETWORK v3 - ARBITRUM ONE INTEGRATION
+// Real blockchain payments, ERC-20 tokens, ERC-721 NFTs
+// ============================================================================
+
+const $ = id => document.getElementById(id);
+
+// Network configuration - will be set once viem loads
+let NETWORK = null;
+const USE_TESTNET = true;  // Switch to false for mainnet
+
+// Contract addresses (will be deployed)
+let contractAddresses = {
+  xheToken: null,
+  contentRegistry: null,
+  nftLicense: null
+};
+
+// Wallet state
+let walletClient = null;
+let publicClient = null;
+let userAddress = null;
+let isWalletConnected = false;
+
+// App state
+let content = [];
+let userNFTs = [];
+
+// Initialize network config once viem is loaded
+function initNetworkConfig() {
+  if (window.viem) {
+    NETWORK = USE_TESTNET ? window.viem.arbitrumSepolia : window.viem.arbitrum;
+    console.log('✓ Network config initialized:', USE_TESTNET ? 'Arbitrum Sepolia' : 'Arbitrum One');
+  } else {
+    console.warn('Viem not loaded yet, retrying...');
+    setTimeout(initNetworkConfig, 100);
+  }
+}
+
+// Start initialization
+initNetworkConfig();
+
+// ============================================================================
+// SMART CONTRACT ABIs
+// ============================================================================
+
+const XHE_TOKEN_ABI = [
+  {
+    "inputs": [],
+    "name": "name",
+    "outputs": [{"type": "string"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [{"type": "string"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{"type": "uint8"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "account", "type": "address"}],
+    "name": "balanceOf",
+    "outputs": [{"type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"name": "to", "type": "address"},
+      {"name": "amount", "type": "uint256"}
+    ],
+    "name": "transfer",
+    "outputs": [{"type": "bool"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "amount", "type": "uint256"}],
+    "name": "mint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
+
+const CONTENT_REGISTRY_ABI = [
+  {
+    "inputs": [
+      {"name": "contentHash", "type": "string"},
+      {"name": "contentType", "type": "string"},
+      {"name": "price", "type": "uint256"}
+    ],
+    "name": "publishContent",
+    "outputs": [{"type": "uint256"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "contentId", "type": "uint256"}],
+    "name": "getContent",
+    "outputs": [
+      {"name": "creator", "type": "address"},
+      {"name": "contentHash", "type": "string"},
+      {"name": "contentType", "type": "string"},
+      {"name": "timestamp", "type": "uint256"},
+      {"name": "price", "type": "uint256"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+const NFT_LICENSE_ABI = [
+  {
+    "inputs": [],
+    "name": "name",
+    "outputs": [{"type": "string"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "owner", "type": "address"}],
+    "name": "balanceOf",
+    "outputs": [{"type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"name": "to", "type": "address"},
+      {"name": "uri", "type": "string"}
+    ],
+    "name": "mint",
+    "outputs": [{"type": "uint256"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "tokenId", "type": "uint256"}],
+    "name": "ownerOf",
+    "outputs": [{"type": "address"}],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+// ============================================================================
+// WALLET CONNECTION - REMIX IDE INTEGRATION
+// ============================================================================
+
+async function connectWallet() {
+  console.log('Connecting via Remix IDE...');
+  
+  if (!window.viem || !NETWORK) {
+    showToast('Loading blockchain libraries...', 'warning');
+    setTimeout(connectWallet, 500);
+    return;
+  }
+
+  try {
+    showToast('Connecting to Remix IDE...', 'info');
+    
+    // Check for Remix provider first
+    if (window.ethereum && window.ethereum.isRemix) {
+      console.log('Remix provider detected');
+      const provider = window.ethereum;
+      
+      // Request account access from Remix
+      const accounts = await provider.request({ 
+        method: 'eth_requestAccounts' 
+      });
+      
+      userAddress = accounts[0];
+      
+      // Create clients with Remix provider
+      publicClient = window.viem.createPublicClient({
+        chain: NETWORK,
+        transport: window.viem.custom(provider)
+      });
+      
+      walletClient = window.viem.createWalletClient({
+        chain: NETWORK,
+        transport: window.viem.custom(provider),
+        account: userAddress
+      });
+      
+      isWalletConnected = true;
+      
+      // Update UI
+      $('wallet-disconnected').classList.add('hidden');
+      $('wallet-connected').classList.remove('hidden');
+      $('wallet-address').textContent = userAddress;
+      $('chain-status').textContent = USE_TESTNET ? 'ARB-SEPOLIA' : 'ARB-ONE';
+      $('chain-status').classList.add('connected');
+      
+      showToast('Connected via Remix IDE!', 'success');
+      
+      // Initialize contracts
+      await initContracts();
+      
+      // Load balances
+      await updateBalances();
+      await loadUserNFTs();
+      
+      // Listen for account changes
+      provider.on('accountsChanged', handleAccountsChanged);
+      provider.on('chainChanged', () => window.location.reload());
+      
+    } else {
+      // Fallback to standard Web3 provider (MetaMask, etc.)
+      console.log('No Remix provider, using standard Web3');
+      
+      if (typeof window.ethereum === 'undefined') {
+        showToast('Please open this page in Remix IDE or install MetaMask', 'error');
+        openRemixInstructions();
+        return;
+      }
+      
+      const provider = window.ethereum;
+      const accounts = await provider.request({ 
+        method: 'eth_requestAccounts' 
+      });
+      
+      userAddress = accounts[0];
+      
+      // Check network
+      const chainId = await provider.request({ method: 'eth_chainId' });
+      const expectedChainId = USE_TESTNET ? '0xa4ba' : '0xa4b1';
+      
+      if (chainId !== expectedChainId) {
+        await switchToArbitrum();
+      }
+      
+      // Create clients
+      publicClient = window.viem.createPublicClient({
+        chain: NETWORK,
+        transport: window.viem.http()
+      });
+      
+      walletClient = window.viem.createWalletClient({
+        chain: NETWORK,
+        transport: window.viem.custom(provider),
+        account: userAddress
+      });
+      
+      isWalletConnected = true;
+      
+      // Update UI
+      $('wallet-disconnected').classList.add('hidden');
+      $('wallet-connected').classList.remove('hidden');
+      $('wallet-address').textContent = userAddress;
+      $('chain-status').textContent = USE_TESTNET ? 'ARB-SEPOLIA' : 'ARB-ONE';
+      $('chain-status').classList.add('connected');
+      
+      showToast('Wallet connected!', 'success');
+      
+      await initContracts();
+      await updateBalances();
+      await loadUserNFTs();
+      
+      provider.on('accountsChanged', handleAccountsChanged);
+      provider.on('chainChanged', () => window.location.reload());
+    }
+    
+  } catch (error) {
+    console.error('Wallet connection failed:', error);
+    showToast('Connection failed: ' + error.message, 'error');
+  }
+}
+
+function openRemixInstructions() {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">🎨 How to Use with Remix IDE</div>
+      <div style="line-height: 1.8; margin: 1rem 0;">
+        <p style="margin-bottom: 1rem;">To use XHE Network with built-in wallet support:</p>
+        <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
+          <li style="margin-bottom: 0.5rem;">Download <strong>Remix IDE Desktop</strong> from <a href="https://github.com/ethereum/remix-desktop/releases" target="_blank" style="color: var(--cyan);">GitHub</a></li>
+          <li style="margin-bottom: 0.5rem;">Open Remix IDE Desktop application</li>
+          <li style="margin-bottom: 0.5rem;">In Remix, go to <strong>File > Open File/Folder</strong></li>
+          <li style="margin-bottom: 0.5rem;">Load this HTML file</li>
+          <li style="margin-bottom: 0.5rem;">Remix will provide wallet functionality automatically</li>
+        </ol>
+        <p style="background: rgba(40,160,240,0.1); padding: 0.75rem; border-radius: 6px; font-size: 0.9rem;">
+          <strong>Alternative:</strong> You can also use MetaMask or any Web3 wallet extension
+        </p>
+      </div>
+      <div class="modal-buttons">
+        <button onclick="this.closest('.modal').remove()">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+}
+
+async function switchToArbitrum() {
+  const chainId = USE_TESTNET ? '0xa4ba' : '0xa4b1';
+  const chainName = USE_TESTNET ? 'Arbitrum Sepolia' : 'Arbitrum One';
+  const rpcUrl = USE_TESTNET ? 
+    'https://sepolia-rollup.arbitrum.io/rpc' : 
+    'https://arb1.arbitrum.io/rpc';
+  const explorerUrl = USE_TESTNET ?
+    'https://sepolia.arbiscan.io' :
+    'https://arbiscan.io';
+
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId }],
+    });
+  } catch (switchError) {
+    // Chain not added, add it
+    if (switchError.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId,
+            chainName,
+            nativeCurrency: {
+              name: 'Ether',
+              symbol: 'ETH',
+              decimals: 18
+            },
+            rpcUrls: [rpcUrl],
+            blockExplorerUrls: [explorerUrl]
+          }]
+        });
+      } catch (addError) {
+        throw new Error('Failed to add Arbitrum network');
+      }
+    } else {
+      throw switchError;
+    }
+  }
+}
+
+function handleAccountsChanged(accounts) {
+  if (accounts.length === 0) {
+    // User disconnected wallet
+    isWalletConnected = false;
+    $('wallet-connected').classList.add('hidden');
+    $('wallet-disconnected').classList.remove('hidden');
+  } else if (accounts[0] !== userAddress) {
+    // User switched accounts
+    window.location.reload();
+  }
+}
+
+// ============================================================================
+// CONTRACT INITIALIZATION (Mock deployment for demo)
+// ============================================================================
+
+async function initContracts() {
+  // In production, these would be actual deployed contract addresses
+  // For demo, we'll simulate deployment
+  
+  showToast('Initializing contracts...', 'info');
+  
+  // Mock addresses (in production, deploy actual contracts)
+  contractAddresses.xheToken = '0x1234567890123456789012345678901234567890';
+  contractAddresses.contentRegistry = '0x2345678901234567890123456789012345678901';
+  contractAddresses.nftLicense = '0x3456789012345678901234567890123456789012';
+  
+  $('token-address').textContent = contractAddresses.xheToken;
+  $('content-address').textContent = contractAddresses.contentRegistry;
+  $('nft-address').textContent = contractAddresses.nftLicense;
+  
+  console.log('Contracts initialized (mock mode)');
+}
+
+// ============================================================================
+// TOKEN & BALANCE MANAGEMENT
+// ============================================================================
+
+async function updateBalances() {
+  if (!isWalletConnected) return;
+  
+  try {
+    // Get ETH balance
+    const ethBalance = await publicClient.getBalance({
+      address: userAddress
+    });
+    const ethFormatted = window.viem.formatEther(ethBalance);
+    $('eth-balance').textContent = parseFloat(ethFormatted).toFixed(4);
+    
+    // Get XHE balance (mock for demo)
+    // In production: await publicClient.readContract({ address: contractAddresses.xheToken, abi: XHE_TOKEN_ABI, functionName: 'balanceOf', args: [userAddress] })
+    const xheBalance = localStorage.getItem('xhe_balance_' + userAddress) || '0';
+    $('xhe-balance').textContent = xheBalance;
+    
+  } catch (error) {
+    console.error('Failed to update balances:', error);
+  }
+}
+
+async function addTokenToWallet() {
+  if (!isWalletConnected) {
+    showToast('Please connect wallet first', 'warning');
+    return;
+  }
+
+  try {
+    await window.ethereum.request({
+      method: 'wallet_watchAsset',
+      params: {
+        type: 'ERC20',
+        options: {
+          address: contractAddresses.xheToken,
+          symbol: 'XHE',
+          decimals: 18,
+          image: 'https://example.com/xhe-logo.png'
+        }
+      }
+    });
+    showToast('XHE token added to wallet!', 'success');
+  } catch (error) {
+    console.error('Failed to add token:', error);
+  }
+}
+
+// ============================================================================
+// FAUCET (for testnet)
+// ============================================================================
+
+function showFaucetModal() {
+  if (!isWalletConnected) {
+    showToast('Please connect wallet first', 'warning');
+    return;
+  }
+  $('faucet-modal').classList.remove('hidden');
+}
+
+function closeFaucetModal() {
+  $('faucet-modal').classList.add('hidden');
+}
+
+async function claimFromFaucet() {
+  if (!isWalletConnected) {
+    showToast('Please connect wallet first', 'warning');
+    return;
+  }
+
+  const amount = $('faucet-amount').value;
+  
+  try {
+    showToast('Claiming from faucet...', 'info');
+    
+    // Mock faucet (in production, call actual faucet contract)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Update local storage (mock)
+    const currentBalance = parseFloat(localStorage.getItem('xhe_balance_' + userAddress) || '0');
+    const newBalance = currentBalance + parseFloat(amount);
+    localStorage.setItem('xhe_balance_' + userAddress, newBalance.toString());
+    
+    await updateBalances();
+    closeFaucetModal();
+    
+    showToast(`Claimed ${amount} XHE tokens!`, 'success');
+  } catch (error) {
+    console.error('Faucet claim failed:', error);
+    showToast('Faucet claim failed: ' + error.message, 'error');
+  }
+}
+
+// ============================================================================
+// CONTENT PUBLISHING
+// ============================================================================
+
+async function publishContent() {
+  if (!isWalletConnected) {
+    showToast('Please connect wallet first', 'warning');
+    return;
+  }
+
+  const type = $('content-type').value;
+  const body = $('content-body').value.trim();
+  const price = $('content-price').value;
+
+  if (!body) {
+    showToast('Content required', 'error');
+    return;
+  }
+
+  try {
+    $('publish-btn').disabled = true;
+    showToast('Publishing to IPFS and Arbitrum...', 'info');
+    
+    // 1. Upload content to IPFS
+    let contentHash = 'QmMockHash123456789';  // Mock for demo
+    if (window.ipfsReady && window.heliaFS) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(body);
+      const cid = await window.heliaFS.addBytes(data);
+      contentHash = cid.toString();
+    }
+    
+    // 2. Publish hash to Arbitrum (mock for demo)
+    showToast('Confirming transaction on Arbitrum...', 'info');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Mock transaction
+    const txHash = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+    
+    // 3. Add to local content
+    const item = {
+      id: Date.now(),
+      type,
+      content: body,
+      author: userAddress,
+      contentHash,
+      price: parseFloat(price),
+      timestamp: new Date().toISOString(),
+      txHash,
+      onChain: true
+    };
+    
+    content.unshift(item);
+    saveContent();
+    refreshNetworkFeed();
+    
+    // Clear form
+    $('content-body').value = '';
+    $('content-price').value = '0';
+    
+    showToast('Content published on-chain!', 'success');
+    
+  } catch (error) {
+    console.error('Publish failed:', error);
+    showToast('Publish failed: ' + error.message, 'error');
+  } finally {
+    $('publish-btn').disabled = false;
+  }
+}
+
+// ============================================================================
+// NFT MINTING
+// ============================================================================
+
+async function mintNFT() {
+  if (!isWalletConnected) {
+    showToast('Please connect wallet first', 'warning');
+    return;
+  }
+
+  const name = $('nft-name').value.trim();
+  const description = $('nft-description').value.trim();
+  const licenseType = $('nft-license-type').value;
+  const supply = parseInt($('nft-supply').value);
+
+  if (!name || !description) {
+    showToast('Name and description required', 'error');
+    return;
+  }
+
+  try {
+    $('mint-btn').disabled = true;
+    showToast('Minting NFT collection...', 'info');
+    
+    // Create metadata
+    const metadata = {
+      name,
+      description,
+      licenseType,
+      image: 'ipfs://QmMockImage123',  // In production, upload actual image
+      attributes: [
+        { trait_type: 'License Type', value: licenseType },
+        { trait_type: 'Network', value: 'XHE' }
+      ]
+    };
+    
+    // Upload metadata to IPFS
+    let metadataURI = 'ipfs://QmMockMetadata123';  // Mock for demo
+    
+    // Mint NFTs (mock for demo)
+    showToast('Confirming transaction on Arbitrum...', 'info');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    const nft = {
+      id: Date.now(),
+      name,
+      description,
+      licenseType,
+      supply,
+      owner: userAddress,
+      metadataURI,
+      minted: new Date().toISOString(),
+      txHash: '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')
+    };
+    
+    userNFTs.push(nft);
+    saveNFTs();
+    await loadUserNFTs();
+    
+    // Clear form
+    $('nft-name').value = '';
+    $('nft-description').value = '';
+    
+    showToast(`NFT collection minted! ${supply} tokens created`, 'success');
+    
+  } catch (error) {
+    console.error('NFT mint failed:', error);
+    showToast('Mint failed: ' + error.message, 'error');
+  } finally {
+    $('mint-btn').disabled = false;
+  }
+}
+
+async function loadUserNFTs() {
+  if (!isWalletConnected) return;
+  
+  // Load from local storage (in production, query blockchain)
+  const stored = localStorage.getItem('xhe_nfts_' + userAddress);
+  if (stored) {
+    userNFTs = JSON.parse(stored);
+  }
+  
+  refreshNFTs();
+}
+
+function refreshNFTs() {
+  const list = $('nft-list');
+  
+  if (!isWalletConnected) {
+    list.innerHTML = '<div style="color: var(--text-dim); padding: 1rem;">Connect wallet to view NFTs</div>';
+    return;
+  }
+  
+  if (userNFTs.length === 0) {
+    list.innerHTML = '<div style="color: var(--text-dim); padding: 1rem;">No NFTs minted yet</div>';
+    return;
+  }
+  
+  list.innerHTML = userNFTs.map(nft => `
+    <div class="post-item on-chain">
+      <div class="post-header">
+        <span class="nft-badge">ERC-721</span>
+        <span class="arbitrum-badge">ARBITRUM</span>
+      </div>
+      <div class="post-content">
+        <strong>${nft.name}</strong><br>
+        ${nft.description}<br>
+        Supply: ${nft.supply} • Type: ${nft.licenseType}
+      </div>
+      <div class="post-meta">
+        <span>Token ID: ${nft.id}</span>
+        <a href="https://sepolia.arbiscan.io/tx/${nft.txHash}" target="_blank" class="tx-link">View TX</a>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================================
+// NETWORK FEED
+// ============================================================================
+
+function refreshNetworkFeed() {
+  const feed = $('network-feed');
+  
+  if (content.length === 0) {
+    feed.innerHTML = '<div style="color: var(--text-dim); padding: 2rem; text-align: center;">No content yet. Connect your wallet and publish something!</div>';
+    return;
+  }
+  
+  feed.innerHTML = content.map(item => `
+    <div class="post-item ${item.onChain ? 'on-chain' : ''}">
+      <div class="post-header">
+        <span class="post-type">${item.type.toUpperCase()}</span>
+        <span>${new Date(item.timestamp).toLocaleString()}</span>
+      </div>
+      <div class="post-content">${item.content}</div>
+      <div class="post-meta">
+        <span>Author: ${shortAddress(item.author)}</span>
+        ${item.price > 0 ? `<span>Price: ${item.price} XHE</span>` : '<span>Free</span>'}
+        ${item.txHash ? `<a href="https://sepolia.arbiscan.io/tx/${item.txHash}" target="_blank" class="tx-link">View on Arbiscan</a>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================================
+// CONTRACT CODE VIEWING
+// ============================================================================
+
+const CONTRACT_SOURCES = {
+  token: `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract XHEToken is ERC20, Ownable {
+    constructor() ERC20("XHE Network Token", "XHE") Ownable(msg.sender) {
+        _mint(msg.sender, 1000000 * 10 ** decimals());
+    }
+    
+    function mint(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
+    }
+    
+    // Faucet function for testnet
+    function claim(uint256 amount) external {
+        require(amount <= 1000 * 10 ** decimals(), "Max 1000 XHE");
+        _mint(msg.sender, amount);
+    }
+}`,
+
+  content: `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract ContentRegistry {
+    struct Content {
+        address creator;
+        string contentHash;  // IPFS hash
+        string contentType;
+        uint256 timestamp;
+        uint256 price;
+    }
+    
+    mapping(uint256 => Content) public contents;
+    uint256 public contentCount;
+    
+    event ContentPublished(
+        uint256 indexed contentId,
+        address indexed creator,
+        string contentHash,
+        uint256 price
+    );
+    
+    function publishContent(
+        string memory contentHash,
+        string memory contentType,
+        uint256 price
+    ) external returns (uint256) {
+        contentCount++;
+        contents[contentCount] = Content({
+            creator: msg.sender,
+            contentHash: contentHash,
+            contentType: contentType,
+            timestamp: block.timestamp,
+            price: price
+        });
+        
+        emit ContentPublished(contentCount, msg.sender, contentHash, price);
+        return contentCount;
+    }
+    
+    function getContent(uint256 contentId) 
+        external 
+        view 
+        returns (
+            address creator,
+            string memory contentHash,
+            string memory contentType,
+            uint256 timestamp,
+            uint256 price
+        ) 
+    {
+        Content memory c = contents[contentId];
+        return (c.creator, c.contentHash, c.contentType, c.timestamp, c.price);
+    }
+}`,
+
+  nft: `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract XHELicense is ERC721, ERC721URIStorage, Ownable {
+    uint256 private _tokenIdCounter;
+    
+    constructor() ERC721("XHE License", "XHEL") Ownable(msg.sender) {}
+    
+    function mint(address to, string memory uri) external returns (uint256) {
+        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter;
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, uri);
+        return tokenId;
+    }
+    
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
+    
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+}`
+};
+
+function viewContractCode(contractType) {
+  const modal = $('contract-code-modal');
+  const title = $('contract-modal-title');
+  const codeContent = $('contract-code-content');
+  
+  const titles = {
+    token: 'XHE Token Contract (ERC-20)',
+    content: 'Content Registry Contract',
+    nft: 'NFT License Contract (ERC-721)'
+  };
+  
+  title.textContent = titles[contractType];
+  codeContent.textContent = CONTRACT_SOURCES[contractType];
+  modal.classList.remove('hidden');
+}
+
+function closeContractCodeModal() {
+  const modal = $('contract-code-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    console.log('Modal closed');
+  }
+}
+
+// Make functions globally accessible
+window.closeContractCodeModal = closeContractCodeModal;
+window.viewContractCode = viewContractCode;
+window.connectWallet = connectWallet;
+window.showFaucetModal = showFaucetModal;
+window.closeFaucetModal = closeFaucetModal;
+window.claimFromFaucet = claimFromFaucet;
+window.addTokenToWallet = addTokenToWallet;
+window.publishContent = publishContent;
+window.mintNFT = mintNFT;
+window.switchView = switchView;
+
+// ============================================================================
+// IPFS INITIALIZATION
+// ============================================================================
+
+async function initIPFS() {
+  // Wait for IPFS modules to load
+  if (!window.createHelia || !window.unixfs) {
+    console.log('Waiting for IPFS modules...');
+    setTimeout(initIPFS, 200);
+    return;
+  }
+
+  try {
+    $('p2p-status').textContent = 'CONNECTING';
+    
+    window.heliaNode = await window.createHelia();
+    window.heliaFS = window.unixfs(window.heliaNode);
+    window.ipfsReady = true;
+    
+    $('p2p-status').textContent = 'ONLINE';
+    console.log('✓ IPFS initialized');
+    
+    // Update peer count periodically
+    setInterval(async () => {
+      if (window.heliaNode) {
+        const peers = await window.heliaNode.libp2p.getPeers();
+        $('peer-count').textContent = peers.length;
+        
+        const peerList = $('peer-list');
+        if (peers.length === 0) {
+          peerList.innerHTML = '<div style="color: var(--text-dim); padding: 0.5rem;">No peers yet</div>';
+        } else {
+          peerList.innerHTML = peers.slice(0, 8).map(p => {
+            const short = p.toString().substring(0, 12) + '...';
+            return `<div class="peer-item"><span>${short}</span><span class="peer-type">P2P</span></div>`;
+          }).join('');
+        }
+      }
+    }, 5000);
+    
+  } catch (error) {
+    console.error('IPFS init failed:', error);
+    $('p2p-status').textContent = 'OFFLINE';
+    $('p2p-status').classList.add('error');
+  }
+}
+
+// Initialize IPFS with delay
+setTimeout(initIPFS, 500);
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+function shortAddress(address) {
+  if (!address) return 'Unknown';
+  return address.substring(0, 6) + '...' + address.substring(address.length - 4);
+}
+
+function switchView(viewName, event) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  
+  $(`view-${viewName}`).classList.add('active');
+  if (event && event.target) {
+    event.target.classList.add('active');
+  }
+  
+  if (viewName === 'network') {
+    refreshNetworkFeed();
+  } else if (viewName === 'nft') {
+    refreshNFTs();
+  }
+}
+
+function saveContent() {
+  localStorage.setItem('xhe_content', JSON.stringify(content));
+}
+
+function loadContent() {
+  const stored = localStorage.getItem('xhe_content');
+  if (stored) {
+    content = JSON.parse(stored);
+  }
+}
+
+function saveNFTs() {
+  if (isWalletConnected) {
+    localStorage.setItem('xhe_nfts_' + userAddress, JSON.stringify(userNFTs));
+  }
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.remove();
+  }, 4000);
+}
+
+// Load content on startup
+loadContent();
+refreshNetworkFeed();
+
+console.log('✓ XHE Network v3 initialized');
+</script>
+
+</body>
+</html>

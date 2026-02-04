@@ -1,0 +1,4111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I-AM-Decentralized-Systems — Sovereign Runtime</title>
+    
+    <!--
+    ╔══════════════════════════════════════════════════════════════════════════╗
+    ║  I-AM-Decentralized-Systems                                              ║
+    ║  By JamesBrianChapman                                                    ║
+    ║                                                                          ║
+    ║  DUAL LICENSE:                                                           ║
+    ║  • Open Source: Free for individual research and personal use           ║
+    ║  • Commercial: License required for any commercial usage                ║
+    ║                                                                          ║
+    ║  © 2025 JamesBrianChapman. All rights reserved.                         ║
+    ╚══════════════════════════════════════════════════════════════════════════╝
+    -->
+    
+    <!-- External Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/tweetnacl@1.0.3/nacl-fast.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #05060f;
+            --bg-secondary: #0a0e1a;
+            --bg-card: #0f1420;
+            --bg-hover: #141824;
+            
+            --cyan: 180 100% 50%;
+            --magenta: 300 100% 50%;
+            --purple: 270 100% 50%;
+            --green: 142 71% 45%;
+            --yellow: 48 100% 50%;
+            --orange: 30 100% 50%;
+            
+            --text-primary: #e8f4ff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --border: rgba(148, 163, 184, 0.1);
+            --border-hover: rgba(148, 163, 184, 0.2);
+            
+            --shadow-glow-cyan: 0 0 40px rgba(0, 255, 255, 0.3);
+            --shadow-glow-magenta: 0 0 40px rgba(255, 0, 255, 0.3);
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5);
+            
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Animated background */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        /* Main layout */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: rgba(10, 14, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-card);
+        }
+
+        .header-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-pulse {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: hsl(var(--cyan));
+            box-shadow: var(--shadow-glow-cyan);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, hsl(var(--cyan)), hsl(var(--magenta)));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: -2px;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-value {
+            color: hsl(var(--cyan));
+            font-weight: 600;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem 1rem;
+            overflow-y: auto;
+            height: calc(100vh - 73px);
+            position: sticky;
+            top: 73px;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            padding: 0 0.75rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
+            color: var(--text-primary);
+            border-color: hsl(var(--cyan) / 0.3);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        /* Content area */
+        .content-area {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            height: calc(100vh - 73px);
+        }
+
+        .view-section {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-card);
+            transition: var(--transition-smooth);
+        }
+
+        .card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-card), 0 0 20px rgba(0, 255, 255, 0.05);
+        }
+
+        .card-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, hsl(var(--cyan)), hsl(var(--magenta)));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        /* Grid layout */
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            border: none;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, hsl(var(--cyan)), hsl(var(--magenta)));
+            color: var(--bg-primary);
+            box-shadow: 0 4px 12px rgba(0, 255, 255, 0.2);
+        }
+
+        .btn-primary:hover {
+            box-shadow: var(--shadow-glow-cyan);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-secondary);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-primary);
+            border-color: hsl(var(--cyan) / 0.3);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        /* Inputs */
+        .input, .textarea, .select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.875rem;
+            transition: var(--transition-smooth);
+        }
+
+        .input:focus, .textarea:focus, .select:focus {
+            outline: none;
+            border-color: hsl(var(--cyan) / 0.5);
+            box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.1);
+        }
+
+        .textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Terminal */
+        .terminal {
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: hsl(var(--green));
+            height: 400px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .terminal-line {
+            margin-bottom: 0.25rem;
+        }
+
+        .terminal-prompt {
+            color: hsl(var(--cyan));
+        }
+
+        .terminal-error {
+            color: hsl(var(--orange));
+        }
+
+        .terminal-success {
+            color: hsl(var(--green));
+        }
+
+        /* Stats */
+        .stat-card {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-hover));
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, hsl(var(--cyan)), hsl(var(--magenta)));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Code block */
+        .code-block {
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: hsl(var(--cyan));
+            overflow-x: auto;
+            line-height: 1.6;
+            word-break: break-all;
+        }
+
+        /* Identity display */
+        .identity-box {
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid hsl(var(--cyan) / 0.2);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            word-break: break-all;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: hsl(var(--cyan));
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 4px solid hsl(var(--cyan));
+            border-radius: 0.5rem;
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow-card);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            max-width: 400px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            border-left-color: hsl(var(--green));
+        }
+
+        .toast.error {
+            border-left-color: hsl(var(--orange));
+        }
+
+        /* Posts */
+        .post {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: var(--transition-smooth);
+        }
+
+        .post:hover {
+            border-color: var(--border-hover);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, hsl(var(--cyan)), hsl(var(--magenta)));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .post-author {
+            flex: 1;
+        }
+
+        .post-author-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .post-author-wallet {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .post-content {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .post-media {
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .post-media img, .post-media video {
+            width: 100%;
+            display: block;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .post-action {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition-smooth);
+            font-size: 0.875rem;
+        }
+
+        .post-action:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .post-action.liked {
+            color: #ef4444;
+        }
+
+        /* Messages */
+        .message {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            margin-bottom: 0.75rem;
+        }
+
+        .message:hover {
+            background: var(--bg-hover);
+        }
+
+        .message.unread {
+            border-left: 3px solid hsl(var(--cyan));
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .message-text {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(0, 255, 255, 0.1);
+            color: hsl(var(--cyan));
+            border: 1px solid hsl(var(--cyan) / 0.3);
+        }
+
+        .badge.success {
+            background: rgba(134, 239, 172, 0.1);
+            color: hsl(var(--green));
+            border-color: hsl(var(--green) / 0.3);
+        }
+
+        .badge.warning {
+            background: rgba(251, 191, 36, 0.1);
+            color: hsl(var(--yellow));
+            border-color: hsl(var(--yellow) / 0.3);
+        }
+
+        .badge.error {
+            background: rgba(248, 113, 113, 0.1);
+            color: hsl(var(--orange));
+            border-color: hsl(var(--orange) / 0.3);
+        }
+
+        /* File items */
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            transition: var(--transition-smooth);
+            margin-bottom: 0.75rem;
+        }
+
+        .file-item:hover {
+            border-color: var(--border-hover);
+            background: var(--bg-hover);
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: hsl(var(--cyan));
+            font-size: 1.25rem;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .file-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .icon-btn:hover {
+            color: var(--text-primary);
+            border-color: hsl(var(--cyan) / 0.3);
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 999;
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: hsl(var(--cyan));
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            transition: var(--transition-smooth);
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: hsl(var(--cyan));
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, hsl(var(--cyan)), hsl(var(--magenta)));
+            transition: width 0.3s ease;
+        }
+
+        /* Remix iframe */
+        .remix-container {
+            width: 100%;
+            height: calc(100vh - 200px);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+
+        .remix-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Upload area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 0.75rem;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .upload-area:hover, .upload-area.dragging {
+            border-color: hsl(var(--cyan) / 0.5);
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: hsl(var(--cyan));
+            margin-bottom: 1rem;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 255, 0.5);
+        }
+
+        /* Utility */
+        .hidden {
+            display: none !important;
+        }
+
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .header-stats {
+                display: none;
+            }
+            
+            .content-area {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    
+    <div class="app-container">
+        <header>
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="status-pulse"></div>
+                    <div class="logo">
+                        <h1>I-AM-Decentralized-Systems</h1>
+                        <div class="logo-subtitle">Sovereign Runtime by JamesBrianChapman</div>
+                    </div>
+                </div>
+                
+                <div class="header-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-wallet"></i>
+                        <span>Wallet: <span class="stat-value" id="wallet-status">Not Connected</span></span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-cube"></i>
+                        <span>Blocks: <span class="stat-value" id="block-count">0</span></span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-robot"></i>
+                        <span>Agents: <span class="stat-value" id="agent-count">0</span></span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-coins"></i>
+                        <span>IAM: <span class="stat-value" id="token-balance">0</span></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <nav class="sidebar">
+                <div class="nav-section">
+                    <div class="nav-title">Core System</div>
+                    <div class="nav-item active" data-view="dashboard">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-view="identity">
+                        <i class="fas fa-fingerprint"></i>
+                        <span>Identity</span>
+                    </div>
+                    <div class="nav-item" data-view="blockchain">
+                        <i class="fas fa-link"></i>
+                        <span>Blockchain</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Social</div>
+                    <div class="nav-item" data-view="feed">
+                        <i class="fas fa-rss"></i>
+                        <span>Feed</span>
+                    </div>
+                    <div class="nav-item" data-view="messages">
+                        <i class="fas fa-envelope"></i>
+                        <span>Messages</span>
+                    </div>
+                    <div class="nav-item" data-view="search">
+                        <i class="fas fa-search"></i>
+                        <span>Search</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Intelligence</div>
+                    <div class="nav-item" data-view="ai">
+                        <i class="fas fa-brain"></i>
+                        <span>AI Runtime</span>
+                    </div>
+                    <div class="nav-item" data-view="agents">
+                        <i class="fas fa-users"></i>
+                        <span>Agent Swarm</span>
+                    </div>
+                    <div class="nav-item" data-view="memory">
+                        <i class="fas fa-database"></i>
+                        <span>Memory Layer</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Storage</div>
+                    <div class="nav-item" data-view="ipfs">
+                        <i class="fas fa-network-wired"></i>
+                        <span>IPFS Storage</span>
+                    </div>
+                    <div class="nav-item" data-view="files">
+                        <i class="fas fa-folder"></i>
+                        <span>File Manager</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Development</div>
+                    <div class="nav-item" data-view="remix">
+                        <i class="fas fa-code"></i>
+                        <span>Remix IDE</span>
+                    </div>
+                    <div class="nav-item" data-view="capsules">
+                        <i class="fas fa-capsules"></i>
+                        <span>ENOS Capsules</span>
+                    </div>
+                    <div class="nav-item" data-view="terminal">
+                        <i class="fas fa-terminal"></i>
+                        <span>Terminal</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Finance</div>
+                    <div class="nav-item" data-view="dex">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>DEX Engine</span>
+                    </div>
+                    <div class="nav-item" data-view="tokens">
+                        <i class="fas fa-coins"></i>
+                        <span>I-AM-Value (IAM)</span>
+                    </div>
+                    <div class="nav-item" data-view="nft">
+                        <i class="fas fa-image"></i>
+                        <span>NFT Studio</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Governance</div>
+                    <div class="nav-item" data-view="dao">
+                        <i class="fas fa-vote-yea"></i>
+                        <span>DAO Voting</span>
+                    </div>
+                    <div class="nav-item" data-view="proposals">
+                        <i class="fas fa-gavel"></i>
+                        <span>Proposals</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">Media</div>
+                    <div class="nav-item" data-view="video">
+                        <i class="fas fa-video"></i>
+                        <span>Video Engine</span>
+                    </div>
+                    <div class="nav-item" data-view="resources">
+                        <i class="fas fa-server"></i>
+                        <span>Resource URIs</span>
+                    </div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">System</div>
+                    <div class="nav-item" data-view="settings">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </div>
+                </div>
+            </nav>
+
+            <main class="content-area">
+                <!-- Dashboard View -->
+                <div class="view-section active" id="view-dashboard">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Welcome to I-AM-Decentralized-Systems</h2>
+                            <p class="card-description">
+                                A sovereign, local-first, content-addressed runtime combining social networking, 
+                                intelligent agents, blockchain technology, and decentralized storage. 
+                                Your identity, data, and intelligence live entirely on your device. 
+                                No servers. No cloud. No masters.
+                            </p>
+                        </div>
+                        <div class="grid grid-3">
+                            <button class="btn btn-primary" onclick="IAMDS.connectWallet()">
+                                <i class="fas fa-wallet"></i>
+                                Connect Wallet
+                            </button>
+                            <button class="btn btn-secondary" onclick="IAMDS.exportState()">
+                                <i class="fas fa-download"></i>
+                                Export State
+                            </button>
+                            <button class="btn btn-ghost" onclick="IAMDS.showInfo()">
+                                <i class="fas fa-info-circle"></i>
+                                System Info
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-3">
+                        <div class="stat-card">
+                            <div class="stat-label">System Status</div>
+                            <div class="stat-number" id="system-status">ONLINE</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Chain Height</div>
+                            <div class="stat-number" id="dashboard-blocks">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Active Agents</div>
+                            <div class="stat-number" id="dashboard-agents">0</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">System Logs</h3>
+                        </div>
+                        <div class="terminal" id="main-terminal">
+                            <div class="terminal-line terminal-success">[SYSTEM] I-AM-Decentralized-Systems initialized successfully</div>
+                            <div class="terminal-line"><span class="terminal-prompt">></span> Ready for sovereign operations...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Identity View -->
+                <div class="view-section" id="view-identity">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Sovereign Identity</h2>
+                            <p class="card-description">
+                                Ed25519 keypair + Ethereum wallet generated and stored locally. Never leaves your device.
+                            </p>
+                        </div>
+                        
+                        <button class="btn btn-primary mb-2" onclick="IAMDS.generateIdentity()">
+                            <i class="fas fa-key"></i> Generate New Identity
+                        </button>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label>Decentralized Identifier (DID)</label>
+                            <div class="identity-box" id="did-display">Click "Generate New Identity" to create your DID</div>
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label>Public Key (Ed25519)</label>
+                            <div class="code-block" id="pubkey-display">—</div>
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label>Mnemonic Seed Phrase (BIP39)</label>
+                            <div class="code-block" id="mnemonic-display">—</div>
+                            <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">
+                                ⚠️ Store this securely! It's your recovery phrase.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card" id="chain-keys-card" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title">Blockchain Addresses</h3>
+                            <p class="card-description">Your addresses on various chains</p>
+                        </div>
+                        <div id="chain-keys-container"></div>
+                    </div>
+                </div>
+
+                <!-- Blockchain View -->
+                <div class="view-section" id="view-blockchain">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Local Blockchain</h2>
+                            <p class="card-description">Proof-of-Work blockchain running locally</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="IAMDS.mineBlock()">
+                            <i class="fas fa-hammer"></i> Mine New Block
+                        </button>
+                    </div>
+
+                    <div id="blockchain-explorer"></div>
+                </div>
+
+                <!-- Feed View -->
+                <div class="view-section" id="view-feed">
+                    <div class="card">
+                        <textarea class="textarea" id="post-input" placeholder="What's on your mind? Share with the sovereign network..."></textarea>
+                        <div class="mt-2" style="display: flex; gap: 1rem;">
+                            <input type="text" class="input" id="post-media-url" placeholder="Add video/image URL (optional)" style="flex: 1;">
+                            <button class="btn btn-primary" onclick="IAMDS.createPost()">
+                                <i class="fas fa-paper-plane"></i> Post
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="feed-container"></div>
+                </div>
+
+                <!-- Messages View -->
+                <div class="view-section" id="view-messages">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">New Message</h3>
+                        </div>
+                        <div class="mb-2">
+                            <label>To (Wallet Address or URL)</label>
+                            <input type="text" class="input" id="message-to" placeholder="0x... or https://...">
+                        </div>
+                        <div class="mb-2">
+                            <label>Message</label>
+                            <textarea class="textarea" id="message-content"></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="IAMDS.sendMessage()">
+                            <i class="fas fa-paper-plane"></i> Send Message
+                        </button>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Inbox</h3>
+                        </div>
+                        <div id="message-list"></div>
+                    </div>
+                </div>
+
+                <!-- Search View -->
+                <div class="view-section" id="view-search">
+                    <div class="card">
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                            <input type="text" class="input" id="search-input" placeholder="Search across posts, files, and more..." style="flex: 1;">
+                            <select class="select" id="search-type" style="width: 150px;">
+                                <option value="all">All</option>
+                                <option value="posts">Posts</option>
+                                <option value="files">Files</option>
+                                <option value="memories">Memories</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="IAMDS.search()">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                        <div id="search-results"></div>
+                    </div>
+                </div>
+
+                <!-- AI Runtime View -->
+                <div class="view-section" id="view-ai">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">AI Runtime (Ollama)</h2>
+                            <p class="card-description">
+                                Local AI inference using Ollama. Ensure Ollama is running on localhost:11434
+                            </p>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label>Model</label>
+                            <select class="select" id="ai-model">
+                                <option value="llama3.2">Llama 3.2</option>
+                                <option value="mistral">Mistral</option>
+                                <option value="phi">Phi</option>
+                                <option value="codellama">Code Llama</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Your Prompt</label>
+                            <textarea class="textarea" id="ai-prompt" placeholder="Ask the AI anything..."></textarea>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="IAMDS.queryAI()">
+                            <i class="fas fa-robot"></i> Generate Response
+                        </button>
+                    </div>
+
+                    <div class="card" id="ai-response-card" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title">AI Response</h3>
+                        </div>
+                        <div id="ai-response" style="white-space: pre-wrap; line-height: 1.6; color: var(--text-secondary);"></div>
+                    </div>
+                </div>
+
+                <!-- Agent Swarm View -->
+                <div class="view-section" id="view-agents">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Agent Swarm</h2>
+                            <p class="card-description">Spawn and manage autonomous agents</p>
+                        </div>
+                        
+                        <div class="grid-2 mb-2">
+                            <div>
+                                <label>Agent Name</label>
+                                <input type="text" class="input" id="agent-name" placeholder="e.g., Data Analyzer">
+                            </div>
+                            <div>
+                                <label>Role/Task</label>
+                                <input type="text" class="input" id="agent-role" placeholder="e.g., Monitor blockchain">
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="IAMDS.createAgent()">
+                            <i class="fas fa-plus"></i> Spawn Agent
+                        </button>
+                    </div>
+
+                    <div class="grid grid-3" id="agent-list"></div>
+                </div>
+
+                <!-- Memory Layer View -->
+                <div class="view-section" id="view-memory">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Memory Layer</h2>
+                            <p class="card-description">Store and retrieve semantic memories</p>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label>Memory Type</label>
+                            <select class="select" id="memory-type">
+                                <option value="note">Note</option>
+                                <option value="idea">Idea</option>
+                                <option value="knowledge">Knowledge</option>
+                                <option value="context">Context</option>
+                                <option value="experience">Experience</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Content</label>
+                            <textarea class="textarea" id="memory-content" placeholder="Enter memory content..."></textarea>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="IAMDS.storeMemory()">
+                            <i class="fas fa-save"></i> Store Memory
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Stored Memories</h3>
+                        </div>
+                        <input type="text" class="input mb-2" id="memory-search" placeholder="Search memories..." onkeyup="IAMDS.searchMemory(this.value)">
+                        <div id="memory-list"></div>
+                    </div>
+                </div>
+
+                <!-- IPFS Storage View -->
+                <div class="view-section" id="view-ipfs">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">IPFS Storage</h2>
+                            <p class="card-description">Content-addressed file storage (simulated)</p>
+                        </div>
+
+                        <div class="upload-area" onclick="document.getElementById('ipfs-file-input').click()">
+                            <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                            <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Click to upload or drag and drop</p>
+                            <p style="color: var(--text-muted); font-size: 0.875rem;">Any file type supported</p>
+                            <input type="file" id="ipfs-file-input" style="display: none;" onchange="IAMDS.uploadToIPFS(event)">
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Stored Files</h3>
+                        </div>
+                        <div id="ipfs-files-list"></div>
+                    </div>
+                </div>
+
+                <!-- File Manager View -->
+                <div class="view-section" id="view-files">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">File Manager</h2>
+                            <p class="card-description">Upload and manage files with metadata</p>
+                        </div>
+                        
+                        <div class="grid-2 mb-2">
+                            <div>
+                                <label>Title</label>
+                                <input type="text" class="input" id="file-title" placeholder="File title">
+                            </div>
+                            <div>
+                                <label>Type</label>
+                                <select class="select" id="file-type">
+                                    <option value="document">Document</option>
+                                    <option value="image">Image</option>
+                                    <option value="video">Video</option>
+                                    <option value="audio">Audio</option>
+                                    <option value="code">Code</option>
+                                    <option value="data">Data</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Description</label>
+                            <textarea class="textarea" id="file-description" placeholder="File description"></textarea>
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Content URL (optional)</label>
+                            <input type="text" class="input" id="file-url" placeholder="https://...">
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Keywords (comma-separated)</label>
+                            <input type="text" class="input" id="file-keywords" placeholder="blockchain, ai, web3">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="IAMDS.uploadFile()">
+                            <i class="fas fa-upload"></i> Upload File
+                        </button>
+                    </div>
+
+                    <div class="grid grid-2" id="files-list"></div>
+                </div>
+
+                <!-- Remix IDE View -->
+                <div class="view-section" id="view-remix">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Remix IDE</h2>
+                            <p class="card-description">Integrated Solidity development environment</p>
+                        </div>
+                        <div class="remix-container">
+                            <iframe src="https://remix.ethereum.org"></iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ENOS Capsules View -->
+                <div class="view-section" id="view-capsules">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">ENOS Capsules</h2>
+                            <p class="card-description">Deploy and execute sovereign code capsules</p>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label>Capsule Code</label>
+                            <textarea class="textarea" id="capsule-code" placeholder="// Write your JavaScript code here..." style="min-height: 200px; font-family: 'JetBrains Mono', monospace;"></textarea>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem;">
+                            <button class="btn btn-secondary" onclick="IAMDS.loadCapsuleTemplate()">
+                                <i class="fas fa-file-code"></i> Load Template
+                            </button>
+                            <button class="btn btn-primary" onclick="IAMDS.deployCapsule()">
+                                <i class="fas fa-rocket"></i> Deploy Capsule
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Deployed Capsules</h3>
+                        </div>
+                        <div id="capsule-list"></div>
+                    </div>
+                </div>
+
+                <!-- Terminal View -->
+                <div class="view-section" id="view-terminal">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">System Terminal</h2>
+                            <p class="card-description">Command-line interface for system operations</p>
+                        </div>
+                        <div class="terminal" id="terminal-output">
+                            <div class="terminal-line terminal-success">[SYSTEM] I-AM-Decentralized-Systems Terminal v1.0</div>
+                            <div class="terminal-line terminal-success">[INFO] Type 'help' for available commands</div>
+                            <div class="terminal-line"><span class="terminal-prompt">$</span> <span id="terminal-cursor">_</span></div>
+                        </div>
+                        <input type="text" class="input mt-2" id="terminal-input" placeholder="Enter command..." onkeypress="IAMDS.handleTerminalInput(event)">
+                    </div>
+                </div>
+
+                <!-- DEX Engine View -->
+                <div class="view-section" id="view-dex">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">DEX Engine</h2>
+                            <p class="card-description">Decentralized exchange for token swaps</p>
+                        </div>
+                        
+                        <div class="grid-2 mb-2">
+                            <div>
+                                <label>From Token</label>
+                                <select class="select" id="from-token">
+                                    <option value="IAM">IAM</option>
+                                    <option value="ETH">ETH</option>
+                                    <option value="BTC">BTC</option>
+                                    <option value="USDC">USDC</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>To Token</label>
+                                <select class="select" id="to-token">
+                                    <option value="ETH">ETH</option>
+                                    <option value="IAM">IAM</option>
+                                    <option value="BTC">BTC</option>
+                                    <option value="USDC">USDC</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Amount</label>
+                            <input type="number" class="input" id="swap-amount" placeholder="0.0" step="0.01">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="IAMDS.executeSwap()">
+                            <i class="fas fa-exchange-alt"></i> Execute Swap
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Swap History</h3>
+                        </div>
+                        <div id="swap-history"></div>
+                    </div>
+                </div>
+
+                <!-- Token System View -->
+                <div class="view-section" id="view-tokens">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">I-AM-Value (IAM) Token</h2>
+                            <p class="card-description">Native token of I-AM-Decentralized-Systems</p>
+                        </div>
+                        
+                        <div class="stat-card mb-2">
+                            <div class="stat-label">Your IAM Balance</div>
+                            <div class="stat-number" id="token-display">0</div>
+                        </div>
+
+                        <div class="grid-2">
+                            <button class="btn btn-primary" onclick="IAMDS.claimRewards()">
+                                <i class="fas fa-gift"></i> Claim Daily Rewards (100 IAM)
+                            </button>
+                            <button class="btn btn-secondary" onclick="IAMDS.mintTokens()">
+                                <i class="fas fa-coins"></i> Mint Test Tokens (1000 IAM)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Token Information</h3>
+                        </div>
+                        <div style="color: var(--text-secondary); line-height: 1.8;">
+                            <p><strong>Name:</strong> I-AM-Value</p>
+                            <p><strong>Symbol:</strong> IAM</p>
+                            <p><strong>Type:</strong> Utility Token</p>
+                            <p><strong>Total Supply:</strong> Dynamic</p>
+                            <p><strong>Use Cases:</strong> Governance, staking, gas fees, agent rewards</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NFT Studio View -->
+                <div class="view-section" id="view-nft">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">NFT Studio</h2>
+                            <p class="card-description">Mint and manage your NFTs on the sovereign chain</p>
+                        </div>
+                        
+                        <div class="grid-2 mb-2">
+                            <div>
+                                <label>NFT Name</label>
+                                <input type="text" class="input" id="nft-name" placeholder="e.g., Sovereign Art #1">
+                            </div>
+                            <div>
+                                <label>Collection</label>
+                                <select class="select" id="nft-collection">
+                                    <option value="art">Art</option>
+                                    <option value="music">Music</option>
+                                    <option value="video">Video</option>
+                                    <option value="document">Document</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Description</label>
+                            <textarea class="textarea" id="nft-description" placeholder="Describe your NFT..." style="min-height: 80px;"></textarea>
+                        </div>
+
+                        <div class="grid-2 mb-2">
+                            <div>
+                                <label>Media URL (Image/Video/Audio)</label>
+                                <input type="text" class="input" id="nft-media-url" placeholder="https:// or ipfs://...">
+                            </div>
+                            <div>
+                                <label>Initial Price (IAM)</label>
+                                <input type="number" class="input" id="nft-price" placeholder="0.0" step="0.01">
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Properties (comma-separated key:value pairs)</label>
+                            <input type="text" class="input" id="nft-properties" placeholder="rarity:legendary, artist:anonymous, edition:1/100">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="IAMDS.mintNFT()">
+                            <i class="fas fa-hammer"></i> Mint NFT
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Your NFT Collection</h3>
+                        </div>
+                        <div class="grid grid-3" id="nft-collection-list"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">NFT Marketplace</h3>
+                            <p class="card-description">Browse and trade NFTs</p>
+                        </div>
+                        <div class="grid grid-3" id="nft-marketplace"></div>
+                    </div>
+                </div>
+
+                <!-- DAO Voting View -->
+                <div class="view-section" id="view-dao">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">DAO Governance</h2>
+                            <p class="card-description">Decentralized autonomous organization for community governance</p>
+                        </div>
+                        
+                        <div class="grid-3">
+                            <div class="stat-card">
+                                <div class="stat-label">Your Voting Power</div>
+                                <div class="stat-number" id="voting-power">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Active Proposals</div>
+                                <div class="stat-number" id="active-proposals-count">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Total Votes Cast</div>
+                                <div class="stat-number" id="total-votes">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Active Proposals</h3>
+                        </div>
+                        <div id="dao-proposals-list"></div>
+                    </div>
+                </div>
+
+                <!-- Proposals View -->
+                <div class="view-section" id="view-proposals">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Create Proposal</h2>
+                            <p class="card-description">Submit a proposal to the DAO for community voting</p>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label>Proposal Title</label>
+                            <input type="text" class="input" id="proposal-title" placeholder="e.g., Increase block rewards by 10%">
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Proposal Type</label>
+                            <select class="select" id="proposal-type">
+                                <option value="treasury">Treasury Allocation</option>
+                                <option value="protocol">Protocol Upgrade</option>
+                                <option value="governance">Governance Change</option>
+                                <option value="community">Community Initiative</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Description</label>
+                            <textarea class="textarea" id="proposal-description" placeholder="Detailed description of your proposal..."></textarea>
+                        </div>
+
+                        <div class="grid-2 mb-2">
+                            <div>
+                                <label>Voting Duration (days)</label>
+                                <input type="number" class="input" id="proposal-duration" value="7" min="1" max="30">
+                            </div>
+                            <div>
+                                <label>Required Quorum (%)</label>
+                                <input type="number" class="input" id="proposal-quorum" value="51" min="1" max="100">
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="IAMDS.createProposal()">
+                            <i class="fas fa-plus"></i> Submit Proposal
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">All Proposals</h3>
+                        </div>
+                        <div id="all-proposals-list"></div>
+                    </div>
+                </div>
+
+                <!-- Video Engine View -->
+                <div class="view-section" id="view-video">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Video Engine</h2>
+                            <p class="card-description">Generate and process video content</p>
+                        </div>
+                        
+                        <div class="grid-2 mb-2">
+                            <div>
+                                <label>Title</label>
+                                <input type="text" class="input" id="video-title" placeholder="Video title">
+                            </div>
+                            <div>
+                                <label>FPS</label>
+                                <select class="select" id="video-fps">
+                                    <option value="24">24 FPS</option>
+                                    <option value="30">30 FPS</option>
+                                    <option value="60">60 FPS</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="IAMDS.generateVideo()">
+                            <i class="fas fa-film"></i> Generate Video
+                        </button>
+                    </div>
+
+                    <div class="grid grid-2" id="video-list"></div>
+                </div>
+
+                <!-- Resource URIs View -->
+                <div class="view-section" id="view-resources">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Resource URI System</h2>
+                            <p class="card-description">
+                                Access files, APIs, videos, audio, and apps through URI endpoints. 
+                                Each resource gets a unique URI that can be used as a URL for streaming, embedding, or API calls.
+                            </p>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label>Resource Type</label>
+                            <select class="select" id="resource-type">
+                                <option value="api">API Endpoint</option>
+                                <option value="video">Video Stream</option>
+                                <option value="audio">Audio Stream</option>
+                                <option value="app">Web Application</option>
+                                <option value="data">Data Feed</option>
+                                <option value="file">File Storage</option>
+                            </select>
+                        </div>
+
+                        <div class="grid-2 mb-2">
+                            <div>
+                                <label>Resource Name</label>
+                                <input type="text" class="input" id="resource-name" placeholder="e.g., my-api-v1">
+                            </div>
+                            <div>
+                                <label>Path/Route</label>
+                                <input type="text" class="input" id="resource-path" placeholder="e.g., /api/users">
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Source URL or Content</label>
+                            <input type="text" class="input" id="resource-source" placeholder="https://... or local content">
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Description</label>
+                            <textarea class="textarea" id="resource-description" placeholder="Describe this resource..." style="min-height: 80px;"></textarea>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="IAMDS.registerResource()">
+                            <i class="fas fa-plus"></i> Register Resource
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Registered Resources</h3>
+                            <p class="card-description">All accessible URIs in your sovereign system</p>
+                        </div>
+                        <div id="resources-list"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">URI Examples</h3>
+                        </div>
+                        <div class="code-block" style="line-height: 2;">
+iamds://video/my-video-stream<br>
+iamds://api/users/list<br>
+iamds://audio/podcast-episode-1<br>
+iamds://app/calculator<br>
+iamds://data/blockchain-stats<br>
+iamds://file/document-abc123
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div class="view-section" id="view-settings">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">System Settings</h2>
+                            <p class="card-description">Configure your sovereign system</p>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label>Display Name</label>
+                            <input type="text" class="input" id="display-name" placeholder="Your name">
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Ollama Endpoint</label>
+                            <input type="text" class="input" id="ollama-endpoint" value="http://localhost:11434">
+                        </div>
+
+                        <button class="btn btn-primary mb-2" onclick="IAMDS.saveSettings()">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+
+                        <hr style="border: 1px solid var(--border); margin: 2rem 0;">
+
+                        <div class="grid-2">
+                            <button class="btn btn-secondary" onclick="IAMDS.exportState()">
+                                <i class="fas fa-download"></i> Export Data
+                            </button>
+                            <button class="btn btn-secondary" onclick="IAMDS.importData()">
+                                <i class="fas fa-upload"></i> Import Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">About</h3>
+                        </div>
+                        <div style="color: var(--text-secondary); line-height: 1.8;">
+                            <p><strong>System:</strong> I-AM-Decentralized-Systems</p>
+                            <p><strong>Version:</strong> 1.0.0 (Genesis)</p>
+                            <p><strong>Author:</strong> JamesBrianChapman</p>
+                            <p><strong>License:</strong> Dual License (Open Source / Commercial)</p>
+                            <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-muted);">
+                                © 2025 JamesBrianChapman. Free for individual research and personal use. 
+                                Commercial license required for business applications.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // I-AM-Decentralized-Systems - Main Runtime
+        // By JamesBrianChapman
+        // ═══════════════════════════════════════════════════════════════════════
+
+        const IAMDS = {
+            // State Management
+            state: {
+                identity: null,
+                blockchain: [],
+                posts: [],
+                messages: [],
+                files: [],
+                agents: [],
+                memories: [],
+                capsules: [],
+                videos: [],
+                swapHistory: [],
+                ipfsFiles: [],
+                nfts: [],
+                proposals: [],
+                votes: [],
+                resources: [],
+                tokens: 0,
+                settings: {
+                    displayName: 'Anonymous',
+                    ollamaEndpoint: 'http://localhost:11434'
+                }
+            },
+
+            // ===== Initialization =====
+            init() {
+                this.log('Initializing I-AM-Decentralized-Systems...', 'info');
+                this.loadState();
+                this.initializeBlockchain();
+                this.initNavigation();
+                this.initBackgroundAnimation();
+                this.renderUI();
+                this.log('System ready', 'success');
+            },
+
+            loadState() {
+                const saved = localStorage.getItem('iamds-state');
+                if (saved) {
+                    try {
+                        this.state = JSON.parse(saved);
+                        this.log('State loaded from localStorage', 'success');
+                    } catch (e) {
+                        this.log('Failed to load state: ' + e.message, 'error');
+                    }
+                }
+            },
+
+            saveState() {
+                try {
+                    localStorage.setItem('iamds-state', JSON.stringify(this.state));
+                } catch (e) {
+                    this.log('Failed to save state: ' + e.message, 'error');
+                }
+            },
+
+            initializeBlockchain() {
+                if (this.state.blockchain.length === 0) {
+                    // Genesis block
+                    this.state.blockchain.push({
+                        index: 0,
+                        timestamp: Date.now(),
+                        data: { type: 'genesis', message: 'I-AM-Decentralized-Systems Genesis Block' },
+                        previousHash: '0',
+                        nonce: 0,
+                        hash: '000000genesis'
+                    });
+                    this.saveState();
+                }
+            },
+
+            initNavigation() {
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const view = item.dataset.view;
+                        this.switchView(view);
+                    });
+                });
+            },
+
+            switchView(viewName) {
+                // Update nav items
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.view === viewName) {
+                        item.classList.add('active');
+                    }
+                });
+
+                // Update views
+                document.querySelectorAll('.view-section').forEach(view => {
+                    view.classList.remove('active');
+                });
+                document.getElementById('view-' + viewName).classList.add('active');
+
+                // Render view-specific content
+                this.renderViewContent(viewName);
+            },
+
+            renderViewContent(viewName) {
+                switch(viewName) {
+                    case 'feed':
+                        this.renderFeed();
+                        break;
+                    case 'messages':
+                        this.renderMessages();
+                        break;
+                    case 'files':
+                        this.renderFiles();
+                        break;
+                    case 'agents':
+                        this.renderAgents();
+                        break;
+                    case 'memory':
+                        this.renderMemories();
+                        break;
+                    case 'capsules':
+                        this.renderCapsules();
+                        break;
+                    case 'blockchain':
+                        this.renderBlockchain();
+                        break;
+                    case 'dex':
+                        this.renderSwapHistory();
+                        break;
+                    case 'video':
+                        this.renderVideos();
+                        break;
+                    case 'ipfs':
+                        this.renderIPFSFiles();
+                        break;
+                    case 'nft':
+                        this.renderNFTs();
+                        this.renderNFTMarketplace();
+                        break;
+                    case 'dao':
+                        this.renderDAOProposals();
+                        this.updateDAOStats();
+                        break;
+                    case 'proposals':
+                        this.renderAllProposals();
+                        break;
+                    case 'resources':
+                        this.renderResources();
+                        break;
+                }
+            },
+
+            renderUI() {
+                // Update header stats
+                document.getElementById('block-count').textContent = this.state.blockchain.length;
+                document.getElementById('agent-count').textContent = this.state.agents.length;
+                document.getElementById('token-balance').textContent = this.state.tokens;
+
+                // Update dashboard stats
+                document.getElementById('dashboard-blocks').textContent = this.state.blockchain.length;
+                document.getElementById('dashboard-agents').textContent = this.state.agents.length;
+
+                // Update token display
+                document.getElementById('token-display').textContent = this.state.tokens;
+
+                // Update identity display
+                if (this.state.identity) {
+                    document.getElementById('did-display').textContent = this.state.identity.did;
+                    document.getElementById('pubkey-display').textContent = this.state.identity.publicKey;
+                    document.getElementById('mnemonic-display').textContent = this.state.identity.mnemonic;
+                    document.getElementById('wallet-status').textContent = 
+                        this.state.identity.chainKeys.ethereum.address.slice(0, 6) + '...' + 
+                        this.state.identity.chainKeys.ethereum.address.slice(-4);
+                    document.getElementById('chain-keys-card').style.display = 'block';
+                    this.renderChainKeys();
+                }
+
+                // Update settings
+                if (this.state.settings) {
+                    document.getElementById('display-name').value = this.state.settings.displayName;
+                    document.getElementById('ollama-endpoint').value = this.state.settings.ollamaEndpoint;
+                }
+            },
+
+            // ===== Identity Management =====
+            async generateIdentity() {
+                try {
+                    // Generate Ed25519 keypair
+                    const keypair = nacl.sign.keyPair();
+                    const publicKey = this.arrayToHex(keypair.publicKey);
+                    const secretKey = this.arrayToHex(keypair.secretKey);
+
+                    // Generate mnemonic (simplified - in production use BIP39)
+                    const mnemonic = this.generateMnemonic();
+
+                    // Generate Ethereum address from seed
+                    const wallet = ethers.Wallet.createRandom();
+
+                    // Create DID
+                    const did = `did:key:z${publicKey.slice(0, 32)}`;
+
+                    this.state.identity = {
+                        id: Date.now(),
+                        did,
+                        publicKey,
+                        secretKey,
+                        mnemonic,
+                        chainKeys: {
+                            ethereum: {
+                                address: wallet.address,
+                                privateKey: wallet.privateKey
+                            }
+                        },
+                        created: Date.now()
+                    };
+
+                    this.saveState();
+                    this.renderUI();
+                    this.log('Identity generated successfully', 'success');
+                } catch (e) {
+                    this.log('Failed to generate identity: ' + e.message, 'error');
+                }
+            },
+
+            generateMnemonic() {
+                const words = ['quantum', 'sovereign', 'decentralized', 'blockchain', 'crypto', 'autonomous', 
+                               'distributed', 'protocol', 'network', 'consensus', 'merkle', 'proof'];
+                return Array.from({length: 12}, () => words[Math.floor(Math.random() * words.length)]).join(' ');
+            },
+
+            renderChainKeys() {
+                const container = document.getElementById('chain-keys-container');
+                if (!this.state.identity) return;
+
+                container.innerHTML = `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <div class="file-icon"><i class="fab fa-ethereum"></i></div>
+                            <div class="file-details">
+                                <div class="file-name">Ethereum</div>
+                                <div class="file-meta">${this.state.identity.chainKeys.ethereum.address}</div>
+                            </div>
+                        </div>
+                        <button class="icon-btn" onclick="IAMDS.copyToClipboard('${this.state.identity.chainKeys.ethereum.address}')">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                `;
+            },
+
+            // ===== Social Features =====
+            createPost() {
+                if (!this.state.identity) {
+                    this.log('Generate identity first', 'error');
+                    return;
+                }
+
+                const content = document.getElementById('post-input').value.trim();
+                const mediaUrl = document.getElementById('post-media-url').value.trim();
+
+                if (!content) {
+                    this.log('Enter post content', 'error');
+                    return;
+                }
+
+                const post = {
+                    id: this.generateId(),
+                    walletAddress: this.state.identity.chainKeys.ethereum.address,
+                    authorName: this.state.settings.displayName,
+                    content,
+                    mediaUrls: mediaUrl ? [mediaUrl] : [],
+                    contentType: mediaUrl.includes('mp4') || mediaUrl.includes('video') ? 'video' : 'image',
+                    likes: [],
+                    comments: [],
+                    shares: [],
+                    created: Date.now(),
+                    tags: []
+                };
+
+                this.state.posts.unshift(post);
+                this.saveState();
+                this.renderFeed();
+
+                document.getElementById('post-input').value = '';
+                document.getElementById('post-media-url').value = '';
+
+                this.log('Post created successfully', 'success');
+            },
+
+            renderFeed() {
+                const container = document.getElementById('feed-container');
+
+                if (this.state.posts.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-muted);">No posts yet. Create the first post!</div>';
+                    return;
+                }
+
+                container.innerHTML = this.state.posts.map(post => {
+                    const liked = this.state.identity && post.likes.includes(this.state.identity.chainKeys.ethereum.address);
+
+                    return `
+                        <div class="post">
+                            <div class="post-header">
+                                <div class="avatar">${post.walletAddress.slice(2, 4).toUpperCase()}</div>
+                                <div class="post-author">
+                                    <div class="post-author-name">${post.authorName}</div>
+                                    <div class="post-author-wallet">${post.walletAddress.slice(0, 10)}...${post.walletAddress.slice(-8)}</div>
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                    ${this.formatTime(post.created)}
+                                </div>
+                            </div>
+                            <div class="post-content">${this.escapeHtml(post.content)}</div>
+                            ${post.mediaUrls.length > 0 ? `
+                                <div class="post-media">
+                                    ${post.contentType === 'video' ? 
+                                        `<video controls style="width: 100%;"><source src="${post.mediaUrls[0]}">Your browser does not support video.</video>` :
+                                        `<img src="${post.mediaUrls[0]}" alt="Post media" style="max-width: 100%;">`
+                                    }
+                                </div>
+                            ` : ''}
+                            <div class="post-actions">
+                                <div class="post-action ${liked ? 'liked' : ''}" onclick="IAMDS.likePost('${post.id}')">
+                                    <i class="fas fa-heart"></i> ${post.likes.length}
+                                </div>
+                                <div class="post-action">
+                                    <i class="fas fa-comment"></i> ${post.comments.length}
+                                </div>
+                                <div class="post-action">
+                                    <i class="fas fa-share"></i> ${post.shares.length}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            likePost(postId) {
+                if (!this.state.identity) {
+                    this.log('Generate identity first', 'error');
+                    return;
+                }
+
+                const post = this.state.posts.find(p => p.id === postId);
+                if (!post) return;
+
+                const wallet = this.state.identity.chainKeys.ethereum.address;
+                const index = post.likes.indexOf(wallet);
+
+                if (index > -1) {
+                    post.likes.splice(index, 1);
+                } else {
+                    post.likes.push(wallet);
+                }
+
+                this.saveState();
+                this.renderFeed();
+            },
+
+            // ===== Messages =====
+            sendMessage() {
+                if (!this.state.identity) {
+                    this.log('Generate identity first', 'error');
+                    return;
+                }
+
+                const to = document.getElementById('message-to').value.trim();
+                const content = document.getElementById('message-content').value.trim();
+
+                if (!to || !content) {
+                    this.log('Enter recipient and message', 'error');
+                    return;
+                }
+
+                const message = {
+                    id: this.generateId(),
+                    fromWallet: this.state.identity.chainKeys.ethereum.address,
+                    toWallet: to,
+                    content,
+                    contentType: 'text',
+                    timestamp: Date.now(),
+                    read: false
+                };
+
+                this.state.messages.push(message);
+                this.saveState();
+                this.renderMessages();
+
+                document.getElementById('message-to').value = '';
+                document.getElementById('message-content').value = '';
+
+                this.log('Message sent successfully', 'success');
+            },
+
+            renderMessages() {
+                const container = document.getElementById('message-list');
+
+                if (this.state.messages.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">No messages yet</div>';
+                    return;
+                }
+
+                container.innerHTML = this.state.messages.slice().reverse().map(msg => `
+                    <div class="message ${!msg.read ? 'unread' : ''}">
+                        <div class="avatar" style="width: 40px; height: 40px; font-size: 1rem;">${msg.fromWallet.slice(2, 4).toUpperCase()}</div>
+                        <div class="message-content">
+                            <div class="message-sender">${msg.fromWallet.slice(0, 10)}...${msg.fromWallet.slice(-6)}</div>
+                            <div class="message-text">${this.escapeHtml(msg.content)}</div>
+                            <div class="message-time">${this.formatTime(msg.timestamp)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            // ===== Files =====
+            async uploadFile() {
+                if (!this.state.identity) {
+                    this.log('Generate identity first', 'error');
+                    return;
+                }
+
+                const title = document.getElementById('file-title').value.trim();
+                const type = document.getElementById('file-type').value;
+                const description = document.getElementById('file-description').value.trim();
+                const url = document.getElementById('file-url').value.trim();
+                const keywords = document.getElementById('file-keywords').value.split(',').map(k => k.trim()).filter(Boolean);
+
+                if (!title || !description) {
+                    this.log('Enter title and description', 'error');
+                    return;
+                }
+
+                const contentHash = await this.sha256(title + description + url + Date.now());
+
+                const file = {
+                    id: this.generateId(),
+                    userId: this.state.identity.id,
+                    title,
+                    type,
+                    description,
+                    keywords,
+                    contentUrl: url,
+                    connectedFiles: [],
+                    frozenLayer: {
+                        contentHash,
+                        cid: 'Qm' + contentHash.slice(0, 44),
+                        timestamp: Date.now(),
+                        blockNumber: this.state.blockchain.length,
+                        metadata: { type, keywords }
+                    },
+                    transformerLayer: {
+                        processingState: 'completed',
+                        version: 1,
+                        transformations: [],
+                        lastProcessed: Date.now()
+                    },
+                    created: Date.now()
+                };
+
+                this.state.files.push(file);
+                this.saveState();
+                this.renderFiles();
+
+                document.getElementById('file-title').value = '';
+                document.getElementById('file-description').value = '';
+                document.getElementById('file-url').value = '';
+                document.getElementById('file-keywords').value = '';
+
+                this.log('File uploaded successfully', 'success');
+            },
+
+            renderFiles() {
+                const container = document.getElementById('files-list');
+
+                if (this.state.files.length === 0) {
+                    container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">No files uploaded yet</div>';
+                    return;
+                }
+
+                container.innerHTML = this.state.files.map(file => `
+                    <div class="card" style="margin: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 0.5rem;">${this.escapeHtml(file.title)}</div>
+                                <span class="badge">${file.type}</span>
+                            </div>
+                        </div>
+                        <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">
+                            ${this.escapeHtml(file.description)}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                            <strong>Hash:</strong> ${file.frozenLayer.contentHash.slice(0, 16)}...
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">
+                            <strong>CID:</strong> ${file.frozenLayer.cid}
+                        </div>
+                        ${file.keywords.length > 0 ? `
+                            <div style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                ${file.keywords.map(k => `<span class="badge">${this.escapeHtml(k)}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            },
+
+            // ===== IPFS Storage =====
+            uploadToIPFS(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const content = e.target.result;
+                    const hash = await this.sha256(content);
+                    const cid = 'Qm' + hash.slice(0, 44);
+
+                    const ipfsFile = {
+                        id: this.generateId(),
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        cid,
+                        hash,
+                        uploaded: Date.now()
+                    };
+
+                    this.state.ipfsFiles.push(ipfsFile);
+                    this.saveState();
+                    this.renderIPFSFiles();
+                    this.log(`File uploaded to IPFS: ${cid}`, 'success');
+                };
+                reader.readAsText(file);
+            },
+
+            renderIPFSFiles() {
+                const container = document.getElementById('ipfs-files-list');
+
+                if (this.state.ipfsFiles.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">No files in IPFS yet</div>';
+                    return;
+                }
+
+                container.innerHTML = this.state.ipfsFiles.map(file => `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <div class="file-icon"><i class="fas fa-file"></i></div>
+                            <div class="file-details">
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-meta">${this.formatBytes(file.size)} • CID: ${file.cid.slice(0, 20)}...</div>
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="icon-btn" onclick="IAMDS.copyToClipboard('${file.cid}')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button class="icon-btn" onclick="IAMDS.deleteIPFSFile(${file.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            deleteIPFSFile(id) {
+                this.state.ipfsFiles = this.state.ipfsFiles.filter(f => f.id !== id);
+                this.saveState();
+                this.renderIPFSFiles();
+                this.log('File deleted from IPFS', 'success');
+            },
+
+            // ===== Search =====
+            search() {
+                const query = document.getElementById('search-input').value.trim().toLowerCase();
+                const type = document.getElementById('search-type').value;
+
+                if (!query) {
+                    this.log('Enter search query', 'error');
+                    return;
+                }
+
+                const results = [];
+
+                // Search posts
+                if (type === 'all' || type === 'posts') {
+                    this.state.posts.forEach(post => {
+                        if (post.content.toLowerCase().includes(query)) {
+                            results.push({
+                                type: 'post',
+                                title: post.content.slice(0, 50) + '...',
+                                description: `By ${post.walletAddress.slice(0, 10)}...`,
+                                data: post
+                            });
+                        }
+                    });
+                }
+
+                // Search files
+                if (type === 'all' || type === 'files') {
+                    this.state.files.forEach(file => {
+                        if (file.title.toLowerCase().includes(query) || 
+                            file.description.toLowerCase().includes(query) ||
+                            file.keywords.some(k => k.toLowerCase().includes(query))) {
+                            results.push({
+                                type: 'file',
+                                title: file.title,
+                                description: file.description,
+                                data: file
+                            });
+                        }
+                    });
+                }
+
+                // Search memories
+                if (type === 'all' || type === 'memories') {
+                    this.state.memories.forEach(memory => {
+                        if (memory.content.toLowerCase().includes(query)) {
+                            results.push({
+                                type: 'memory',
+                                title: memory.content.slice(0, 50) + '...',
+                                description: `Type: ${memory.type}`,
+                                data: memory
+                            });
+                        }
+                    });
+                }
+
+                this.renderSearchResults(results);
+                this.log(`Found ${results.length} results`, 'success');
+            },
+
+            renderSearchResults(results) {
+                const container = document.getElementById('search-results');
+
+                if (results.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-muted);">No results found</div>';
+                    return;
+                }
+
+                container.innerHTML = results.map(result => `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <div class="file-icon">
+                                <i class="fas fa-${result.type === 'post' ? 'rss' : result.type === 'file' ? 'file' : 'brain'}"></i>
+                            </div>
+                            <div class="file-details">
+                                <div class="file-name">${this.escapeHtml(result.title)}</div>
+                                <div class="file-meta">${this.escapeHtml(result.description)}</div>
+                            </div>
+                        </div>
+                        <span class="badge">${result.type}</span>
+                    </div>
+                `).join('');
+            },
+
+            // ===== AI Runtime =====
+            async queryAI() {
+                const model = document.getElementById('ai-model').value;
+                const prompt = document.getElementById('ai-prompt').value.trim();
+
+                if (!prompt) {
+                    this.log('Enter a prompt', 'error');
+                    return;
+                }
+
+                this.log('Querying AI model: ' + model, 'info');
+                document.getElementById('ai-response-card').style.display = 'block';
+                document.getElementById('ai-response').innerHTML = '<div class="spinner"></div>';
+
+                try {
+                    const response = await fetch(this.state.settings.ollamaEndpoint + '/api/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model,
+                            prompt,
+                            stream: false
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Ollama not available');
+
+                    const data = await response.json();
+                    document.getElementById('ai-response').textContent = data.response;
+                    this.log('AI response received', 'success');
+                } catch (e) {
+                    document.getElementById('ai-response').innerHTML = `
+                        <div style="color: hsl(var(--orange));">
+                            ⚠️ Ollama not available or network error.
+                            
+                            This is a simulated response. To use real AI, please:
+                            1. Install Ollama (https://ollama.ai)
+                            2. Run: 'ollama pull llama3.2' (or another model)
+                            3. Ensure Ollama is running on localhost:11434
+                        </div>
+                    `;
+                    this.log('Using mock AI (Ollama not available)', 'warning');
+                }
+            },
+
+            // ===== Agent Management =====
+            createAgent() {
+                const name = document.getElementById('agent-name').value.trim();
+                const role = document.getElementById('agent-role').value.trim();
+
+                if (!name || !role) {
+                    this.log('Enter agent name and role', 'error');
+                    return;
+                }
+
+                const agent = {
+                    id: Date.now(),
+                    name,
+                    role,
+                    status: 'active',
+                    tasksCompleted: 0,
+                    created: Date.now()
+                };
+
+                this.state.agents.push(agent);
+                this.saveState();
+                this.renderAgents();
+                this.renderUI();
+
+                document.getElementById('agent-name').value = '';
+                document.getElementById('agent-role').value = '';
+
+                this.log(`Agent "${name}" spawned successfully`, 'success');
+            },
+
+            renderAgents() {
+                const container = document.getElementById('agent-list');
+
+                if (this.state.agents.length === 0) {
+                    container.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <i class="fas fa-robot" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No agents spawned yet</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = this.state.agents.map(agent => `
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="color: hsl(var(--cyan)); font-size: 1.25rem;">${agent.name}</h3>
+                            <span class="badge success">${agent.status}</span>
+                        </div>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">${agent.role}</p>
+                        <div style="font-size: 0.875rem; color: var(--text-muted);">
+                            Tasks: ${agent.tasksCompleted} • Created: ${new Date(agent.created).toLocaleDateString()}
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-ghost" style="width: 100%;" onclick="IAMDS.deleteAgent(${agent.id})">
+                                <i class="fas fa-trash"></i> Terminate
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            deleteAgent(id) {
+                this.state.agents = this.state.agents.filter(a => a.id !== id);
+                this.saveState();
+                this.renderAgents();
+                this.renderUI();
+                this.log('Agent terminated', 'success');
+            },
+
+            // ===== Memory Layer =====
+            storeMemory() {
+                const type = document.getElementById('memory-type').value;
+                const content = document.getElementById('memory-content').value.trim();
+
+                if (!content) {
+                    this.log('Enter memory content', 'error');
+                    return;
+                }
+
+                const memory = {
+                    id: Date.now(),
+                    type,
+                    content,
+                    created: Date.now()
+                };
+
+                this.state.memories.push(memory);
+                this.saveState();
+                this.renderMemories();
+
+                document.getElementById('memory-content').value = '';
+                this.log('Memory stored successfully', 'success');
+            },
+
+            searchMemory(query) {
+                this.renderMemories(query);
+            },
+
+            renderMemories(searchQuery = '') {
+                const container = document.getElementById('memory-list');
+                let memories = this.state.memories;
+
+                if (searchQuery) {
+                    memories = memories.filter(m => 
+                        m.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        m.type.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                }
+
+                if (memories.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <i class="fas fa-brain" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>${searchQuery ? 'No memories found' : 'No memories stored yet'}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = memories.map(memory => `
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span class="badge">${memory.type}</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">
+                                ${new Date(memory.created).toLocaleString()}
+                            </span>
+                        </div>
+                        <p style="color: var(--text-secondary); white-space: pre-wrap;">${this.escapeHtml(memory.content)}</p>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-ghost btn-sm" onclick="IAMDS.deleteMemory(${memory.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            deleteMemory(id) {
+                this.state.memories = this.state.memories.filter(m => m.id !== id);
+                this.saveState();
+                this.renderMemories();
+                this.log('Memory deleted', 'success');
+            },
+
+            // ===== Capsules =====
+            deployCapsule() {
+                const code = document.getElementById('capsule-code').value.trim();
+
+                if (!code) {
+                    this.log('Enter capsule code', 'error');
+                    return;
+                }
+
+                const capsule = {
+                    id: Date.now(),
+                    code,
+                    deployed: Date.now(),
+                    executions: 0
+                };
+
+                this.state.capsules.push(capsule);
+                this.saveState();
+                this.renderCapsules();
+                this.log('Capsule deployed successfully', 'success');
+            },
+
+            loadCapsuleTemplate() {
+                const template = `// ENOS Capsule Template
+async function execute(context) {
+    console.log('Capsule executing...');
+    console.log('Context:', context);
+    
+    // Example: Read data from context
+    const message = context.message || "Hello from capsule!";
+    
+    // Example: Perform a calculation
+    const result = Math.random() * 100;
+    
+    // Return a result object
+    return {
+        status: 'success',
+        output: \`\${message} (Result: \${result.toFixed(2)})\`,
+        timestamp: Date.now()
+    };
+}
+
+// Execute with context
+execute({ message: 'Initializing...', user: 'Sovereign' });`;
+
+                document.getElementById('capsule-code').value = template;
+                this.log('Template loaded', 'success');
+            },
+
+            renderCapsules() {
+                const container = document.getElementById('capsule-list');
+
+                if (this.state.capsules.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <i class="fas fa-capsules" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No capsules deployed</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = this.state.capsules.map(capsule => `
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span class="badge">Capsule #${capsule.id}</span>
+                            <span class="badge success">Active</span>
+                        </div>
+                        <pre class="code-block" style="max-height: 200px; overflow-y: auto;">${this.escapeHtml(capsule.code)}</pre>
+                        <div style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-muted);">
+                            Executions: ${capsule.executions} • Deployed: ${new Date(capsule.deployed).toLocaleString()}
+                        </div>
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <button class="btn btn-primary" onclick="IAMDS.executeCapsule(${capsule.id})">
+                                <i class="fas fa-play"></i> Execute
+                            </button>
+                            <button class="btn btn-ghost" onclick="IAMDS.deleteCapsule(${capsule.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            executeCapsule(id) {
+                const capsule = this.state.capsules.find(c => c.id === id);
+                if (!capsule) return;
+
+                try {
+                    const context = {
+                        currentTimestamp: Date.now(),
+                        agentId: 'sovereign_agent_1',
+                        data: this.state
+                    };
+
+                    const capsuleFunction = new Function('context', capsule.code);
+                    const result = capsuleFunction(context);
+
+                    if (result instanceof Promise) {
+                        result.then(res => {
+                            capsule.executions++;
+                            this.saveState();
+                            this.renderCapsules();
+                            this.log('Capsule executed successfully (async)', 'success');
+                            console.log('Capsule Result:', res);
+                        }).catch(e => {
+                            this.log('Capsule execution failed (async): ' + e.message, 'error');
+                        });
+                    } else {
+                        capsule.executions++;
+                        this.saveState();
+                        this.renderCapsules();
+                        this.log('Capsule executed successfully', 'success');
+                        console.log('Capsule Result:', result);
+                    }
+                } catch (e) {
+                    this.log('Capsule execution failed: ' + e.message, 'error');
+                }
+            },
+
+            deleteCapsule(id) {
+                this.state.capsules = this.state.capsules.filter(c => c.id !== id);
+                this.saveState();
+                this.renderCapsules();
+                this.log('Capsule deleted', 'success');
+            },
+
+            // ===== Blockchain =====
+            async mineBlock() {
+                const lastBlock = this.state.blockchain[this.state.blockchain.length - 1];
+
+                const newBlock = {
+                    index: this.state.blockchain.length,
+                    timestamp: Date.now(),
+                    data: {
+                        type: 'transaction',
+                        message: 'Block mined by sovereign node'
+                    },
+                    previousHash: lastBlock.hash,
+                    nonce: 0,
+                    hash: ''
+                };
+
+                this.log('Mining block...', 'info');
+
+                // Simple PoW
+                while (true) {
+                    const hash = await this.sha256(JSON.stringify(newBlock));
+                    if (hash.startsWith('00')) {
+                        newBlock.hash = hash;
+                        break;
+                    }
+                    newBlock.nonce++;
+
+                    if (newBlock.nonce % 10000 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 0));
+                    }
+                }
+
+                this.state.blockchain.push(newBlock);
+                this.saveState();
+                this.renderBlockchain();
+                this.renderUI();
+                this.log(`Block #${newBlock.index} mined!`, 'success');
+            },
+
+            renderBlockchain() {
+                const container = document.getElementById('blockchain-explorer');
+
+                container.innerHTML = this.state.blockchain.slice().reverse().map(block => `
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span class="badge">Block #${block.index}</span>
+                            <span class="badge success">Nonce: ${block.nonce}</span>
+                        </div>
+                        <div class="code-block" style="margin-bottom: 1rem;">${block.hash}</div>
+                        <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                            ${JSON.stringify(block.data)}
+                        </div>
+                        <div style="margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-muted);">
+                            ${new Date(block.timestamp).toLocaleString()}
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            // ===== Terminal =====
+            handleTerminalInput(event) {
+                if (event.key === 'Enter') {
+                    const input = event.target.value.trim();
+                    if (!input) return;
+
+                    const output = document.getElementById('terminal-output');
+                    output.innerHTML += `<div class="terminal-line"><span class="terminal-prompt">$</span> ${input}</div>`;
+
+                    this.processCommand(input);
+                    event.target.value = '';
+                    output.scrollTop = output.scrollHeight;
+                }
+            },
+
+            processCommand(cmd) {
+                const output = document.getElementById('terminal-output');
+                const parts = cmd.split(' ');
+                const command = parts[0].toLowerCase();
+
+                let response = '';
+
+                switch (command) {
+                    case 'help':
+                        response = `Available commands:
+  help        - Show this help
+  status      - System status
+  clear       - Clear terminal
+  identity    - Show identity info
+  blockchain  - Show chain info
+  agents      - List active agents
+  files       - List stored files
+  memories    - List stored memories
+  capsules    - List deployed capsules
+  tokens      - Show IAM token balance
+  export      - Export system state
+  connect     - Connect wallet`;
+                        break;
+
+                    case 'status':
+                        response = `System Status: ONLINE
+Blocks: ${this.state.blockchain.length}
+Agents: ${this.state.agents.length}
+Files: ${this.state.files.length}
+Memories: ${this.state.memories.length}
+Capsules: ${this.state.capsules.length}
+IAM Tokens: ${this.state.tokens}`;
+                        break;
+
+                    case 'clear':
+                        output.innerHTML = '<div class="terminal-line"><span class="terminal-prompt">$</span> <span id="terminal-cursor">_</span></div>';
+                        return;
+
+                    case 'identity':
+                        response = this.state.identity 
+                            ? `DID: ${this.state.identity.did}\nPublic Key: ${this.state.identity.publicKey.slice(0, 32)}...\nCreated: ${new Date(this.state.identity.created).toLocaleString()}`
+                            : 'No identity generated';
+                        break;
+
+                    case 'blockchain':
+                        const lastBlock = this.state.blockchain[this.state.blockchain.length - 1];
+                        response = `Chain Height: ${this.state.blockchain.length}\nLatest Block: #${lastBlock.index}\nHash: ${lastBlock.hash.slice(0, 32)}...\nNonce: ${lastBlock.nonce}`;
+                        break;
+
+                    case 'agents':
+                        response = this.state.agents.length > 0
+                            ? this.state.agents.map(a => `- ${a.name} (${a.role}) - Status: ${a.status}`).join('\n')
+                            : 'No agents spawned';
+                        break;
+
+                    case 'files':
+                        response = this.state.files.length > 0
+                            ? this.state.files.map(f => `- ${f.title} (${f.type}) - CID: ${f.frozenLayer.cid.slice(0, 20)}...`).join('\n')
+                            : 'No files uploaded';
+                        break;
+
+                    case 'memories':
+                        response = this.state.memories.length > 0
+                            ? this.state.memories.map(m => `- [${m.type}] ${m.content.slice(0, 50)}...`).join('\n')
+                            : 'No memories stored';
+                        break;
+
+                    case 'capsules':
+                        response = this.state.capsules.length > 0
+                            ? this.state.capsules.map(c => `- ID: ${c.id} (Deployed: ${new Date(c.deployed).toLocaleDateString()}) - Executions: ${c.executions}`).join('\n')
+                            : 'No capsules deployed';
+                        break;
+
+                    case 'tokens':
+                        response = `IAM Token Balance: ${this.state.tokens}`;
+                        break;
+
+                    case 'export':
+                        this.exportState();
+                        response = 'State exported to file';
+                        break;
+
+                    case 'connect':
+                        this.connectWallet();
+                        response = 'Attempting to connect wallet...';
+                        break;
+
+                    default:
+                        response = `Command not found: '${command}'\nType 'help' for available commands`;
+                }
+
+                output.innerHTML += `<div class="terminal-line terminal-success">${response.replace(/\n/g, '<br>')}</div>`;
+                output.innerHTML += '<div class="terminal-line"><span class="terminal-prompt">$</span> <span id="terminal-cursor">_</span></div>';
+                output.scrollTop = output.scrollHeight;
+            },
+
+            // ===== DEX =====
+            executeSwap() {
+                const from = document.getElementById('from-token').value;
+                const to = document.getElementById('to-token').value;
+                const amount = parseFloat(document.getElementById('swap-amount').value);
+
+                if (!amount || amount <= 0) {
+                    this.log('Enter a valid amount', 'error');
+                    return;
+                }
+
+                // Check if user has enough tokens for swap
+                if (from === 'IAM' && amount > this.state.tokens) {
+                    this.log('Insufficient IAM balance', 'error');
+                    return;
+                }
+
+                const rate = 0.95 + Math.random() * 0.1;
+                const received = amount * rate;
+
+                // Deduct from balance if swapping IAM
+                if (from === 'IAM') {
+                    this.state.tokens -= amount;
+                } else if (to === 'IAM') {
+                    this.state.tokens += received;
+                }
+
+                const swap = {
+                    id: Date.now(),
+                    from,
+                    to,
+                    amountFrom: amount,
+                    amountTo: received,
+                    rate,
+                    timestamp: Date.now(),
+                    txHash: this.generateId()
+                };
+
+                this.state.swapHistory.push(swap);
+                this.saveState();
+                this.renderSwapHistory();
+                this.renderUI();
+
+                document.getElementById('swap-amount').value = '';
+                this.log(`Swapped ${amount} ${from} for ${received.toFixed(4)} ${to}`, 'success');
+            },
+
+            renderSwapHistory() {
+                const container = document.getElementById('swap-history');
+
+                if (this.state.swapHistory.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <i class="fas fa-history" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No swap history yet</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = this.state.swapHistory.slice().reverse().map(swap => `
+                    <div class="card" style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">
+                                    ${swap.amountFrom} ${swap.from} → ${swap.amountTo.toFixed(4)} ${swap.to}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;">
+                                    Rate: ${swap.rate.toFixed(4)} • TX: ${swap.txHash ? swap.txHash.slice(0, 16) + '...' : 'N/A'}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                    ${new Date(swap.timestamp).toLocaleString()}
+                                </div>
+                            </div>
+                            <span class="badge success">Complete</span>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            // ===== NFT System =====
+            async mintNFT() {
+                if (!this.state.identity) {
+                    this.log('Generate identity first', 'error');
+                    return;
+                }
+
+                const name = document.getElementById('nft-name').value.trim();
+                const collection = document.getElementById('nft-collection').value;
+                const description = document.getElementById('nft-description').value.trim();
+                const mediaUrl = document.getElementById('nft-media-url').value.trim();
+                const price = parseFloat(document.getElementById('nft-price').value) || 0;
+                const propertiesStr = document.getElementById('nft-properties').value.trim();
+
+                if (!name || !description) {
+                    this.log('Enter NFT name and description', 'error');
+                    return;
+                }
+
+                // Parse properties
+                const properties = {};
+                if (propertiesStr) {
+                    propertiesStr.split(',').forEach(prop => {
+                        const [key, value] = prop.split(':').map(s => s.trim());
+                        if (key && value) properties[key] = value;
+                    });
+                }
+
+                // Generate unique token ID
+                const tokenId = this.generateId();
+                const metadataHash = await this.sha256(JSON.stringify({
+                    name, description, mediaUrl, properties, tokenId
+                }));
+
+                const nft = {
+                    id: Date.now(),
+                    tokenId,
+                    name,
+                    collection,
+                    description,
+                    mediaUrl,
+                    price,
+                    properties,
+                    owner: this.state.identity.chainKeys.ethereum.address,
+                    creator: this.state.identity.chainKeys.ethereum.address,
+                    metadataHash,
+                    metadataURI: `iamds://nft/${tokenId}`,
+                    mintedAt: Date.now(),
+                    forSale: price > 0,
+                    royalty: 5, // 5% royalty to creator
+                    transferHistory: []
+                };
+
+                this.state.nfts.push(nft);
+                
+                // Deduct minting fee
+                const mintingFee = 10;
+                if (this.state.tokens >= mintingFee) {
+                    this.state.tokens -= mintingFee;
+                }
+
+                this.saveState();
+                this.renderNFTs();
+                this.renderNFTMarketplace();
+                this.renderUI();
+
+                // Clear form
+                document.getElementById('nft-name').value = '';
+                document.getElementById('nft-description').value = '';
+                document.getElementById('nft-media-url').value = '';
+                document.getElementById('nft-price').value = '';
+                document.getElementById('nft-properties').value = '';
+
+                this.log(`NFT "${name}" minted successfully! Token ID: ${tokenId}`, 'success');
+            },
+
+            renderNFTs() {
+                const container = document.getElementById('nft-collection-list');
+                const myNFTs = this.state.nfts.filter(nft => 
+                    nft.owner === this.state.identity?.chainKeys.ethereum.address
+                );
+
+                if (myNFTs.length === 0) {
+                    container.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <i class="fas fa-image" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No NFTs in your collection yet</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = myNFTs.map(nft => `
+                    <div class="card" style="margin: 0;">
+                        ${nft.mediaUrl ? `
+                            <div style="width: 100%; height: 150px; background: linear-gradient(135deg, var(--bg-hover), var(--bg-secondary)); border-radius: 0.5rem; margin-bottom: 1rem; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                ${nft.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? 
+                                    `<img src="${nft.mediaUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">` :
+                                    `<i class="fas fa-image" style="font-size: 3rem; color: var(--text-muted);"></i>`
+                                }
+                            </div>
+                        ` : ''}
+                        <div style="margin-bottom: 1rem;">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${this.escapeHtml(nft.name)}</div>
+                            <span class="badge">${nft.collection}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            ${this.escapeHtml(nft.description.slice(0, 80))}${nft.description.length > 80 ? '...' : ''}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                            Token ID: ${nft.tokenId.slice(0, 12)}...
+                        </div>
+                        ${Object.keys(nft.properties).length > 0 ? `
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+                                ${Object.entries(nft.properties).slice(0, 3).map(([key, value]) => 
+                                    `<span class="badge">${key}: ${value}</span>`
+                                ).join('')}
+                            </div>
+                        ` : ''}
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-secondary btn-sm" onclick="IAMDS.listNFTForSale(${nft.id})" style="flex: 1;">
+                                <i class="fas fa-tag"></i> ${nft.forSale ? 'Update Price' : 'List for Sale'}
+                            </button>
+                            <button class="btn btn-ghost btn-sm" onclick="IAMDS.transferNFT(${nft.id})">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            renderNFTMarketplace() {
+                const container = document.getElementById('nft-marketplace');
+                const listedNFTs = this.state.nfts.filter(nft => nft.forSale && nft.price > 0);
+
+                if (listedNFTs.length === 0) {
+                    container.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <i class="fas fa-store" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No NFTs listed for sale</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = listedNFTs.map(nft => {
+                    const isOwner = nft.owner === this.state.identity?.chainKeys.ethereum.address;
+                    return `
+                        <div class="card" style="margin: 0;">
+                            ${nft.mediaUrl ? `
+                                <div style="width: 100%; height: 150px; background: linear-gradient(135deg, var(--bg-hover), var(--bg-secondary)); border-radius: 0.5rem; margin-bottom: 1rem; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                    ${nft.mediaUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? 
+                                        `<img src="${nft.mediaUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'">` :
+                                        `<i class="fas fa-image" style="font-size: 3rem; color: var(--text-muted);"></i>`
+                                    }
+                                </div>
+                            ` : ''}
+                            <div style="margin-bottom: 1rem;">
+                                <div style="font-weight: 600; margin-bottom: 0.25rem;">${this.escapeHtml(nft.name)}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                                    by ${nft.creator.slice(0, 6)}...${nft.creator.slice(-4)}
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <div style="font-size: 1.25rem; font-weight: 700; color: hsl(var(--cyan));">
+                                    ${nft.price} IAM
+                                </div>
+                            </div>
+                            ${!isOwner ? `
+                                <button class="btn btn-primary btn-sm" onclick="IAMDS.buyNFT(${nft.id})" style="width: 100%;">
+                                    <i class="fas fa-shopping-cart"></i> Buy Now
+                                </button>
+                            ` : `
+                                <button class="btn btn-ghost btn-sm" onclick="IAMDS.unlistNFT(${nft.id})" style="width: 100%;">
+                                    <i class="fas fa-times"></i> Unlist
+                                </button>
+                            `}
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            listNFTForSale(nftId) {
+                const nft = this.state.nfts.find(n => n.id === nftId);
+                if (!nft) return;
+
+                const price = prompt('Enter sale price in IAM:', nft.price || '10');
+                if (price === null) return;
+
+                const priceNum = parseFloat(price);
+                if (isNaN(priceNum) || priceNum <= 0) {
+                    this.log('Invalid price', 'error');
+                    return;
+                }
+
+                nft.price = priceNum;
+                nft.forSale = true;
+                this.saveState();
+                this.renderNFTs();
+                this.renderNFTMarketplace();
+                this.log(`NFT listed for ${priceNum} IAM`, 'success');
+            },
+
+            unlistNFT(nftId) {
+                const nft = this.state.nfts.find(n => n.id === nftId);
+                if (!nft) return;
+
+                nft.forSale = false;
+                this.saveState();
+                this.renderNFTs();
+                this.renderNFTMarketplace();
+                this.log('NFT unlisted from marketplace', 'success');
+            },
+
+            buyNFT(nftId) {
+                if (!this.state.identity) {
+                    this.log('Generate identity first', 'error');
+                    return;
+                }
+
+                const nft = this.state.nfts.find(n => n.id === nftId);
+                if (!nft) return;
+
+                if (nft.owner === this.state.identity.chainKeys.ethereum.address) {
+                    this.log('You already own this NFT', 'error');
+                    return;
+                }
+
+                if (this.state.tokens < nft.price) {
+                    this.log('Insufficient IAM balance', 'error');
+                    return;
+                }
+
+                // Calculate royalty
+                const royalty = nft.price * (nft.royalty / 100);
+                const sellerAmount = nft.price - royalty;
+
+                // Transfer tokens
+                this.state.tokens -= nft.price;
+
+                // Record transfer
+                nft.transferHistory.push({
+                    from: nft.owner,
+                    to: this.state.identity.chainKeys.ethereum.address,
+                    price: nft.price,
+                    timestamp: Date.now()
+                });
+
+                // Transfer ownership
+                nft.owner = this.state.identity.chainKeys.ethereum.address;
+                nft.forSale = false;
+
+                this.saveState();
+                this.renderNFTs();
+                this.renderNFTMarketplace();
+                this.renderUI();
+                this.log(`NFT purchased for ${nft.price} IAM (${royalty.toFixed(2)} IAM royalty to creator)`, 'success');
+            },
+
+            transferNFT(nftId) {
+                if (!this.state.identity) {
+                    this.log('Generate identity first', 'error');
+                    return;
+                }
+
+                const nft = this.state.nfts.find(n => n.id === nftId);
+                if (!nft) return;
+
+                const toAddress = prompt('Enter recipient wallet address:');
+                if (!toAddress) return;
+
+                nft.transferHistory.push({
+                    from: nft.owner,
+                    to: toAddress,
+                    price: 0,
+                    timestamp: Date.now()
+                });
+
+                nft.owner = toAddress;
+                nft.forSale = false;
+
+                this.saveState();
+                this.renderNFTs();
+                this.renderNFTMarketplace();
+                this.log(`NFT transferred to ${toAddress.slice(0, 10)}...`, 'success');
+            },
+
+            // ===== DAO Governance =====
+            createProposal() {
+                if (!this.state.identity) {
+                    this.log('Generate identity first', 'error');
+                    return;
+                }
+
+                const title = document.getElementById('proposal-title').value.trim();
+                const type = document.getElementById('proposal-type').value;
+                const description = document.getElementById('proposal-description').value.trim();
+                const duration = parseInt(document.getElementById('proposal-duration').value);
+                const quorum = parseInt(document.getElementById('proposal-quorum').value);
+
+                if (!title || !description) {
+                    this.log('Enter proposal title and description', 'error');
+                    return;
+                }
+
+                const proposal = {
+                    id: Date.now(),
+                    proposalId: this.generateId(),
+                    title,
+                    type,
+                    description,
+                    proposer: this.state.identity.chainKeys.ethereum.address,
+                    proposerName: this.state.settings.displayName,
+                    duration,
+                    quorum,
+                    votesFor: 0,
+                    votesAgainst: 0,
+                    votesAbstain: 0,
+                    voters: [],
+                    status: 'active',
+                    createdAt: Date.now(),
+                    endsAt: Date.now() + (duration * 24 * 60 * 60 * 1000)
+                };
+
+                this.state.proposals.push(proposal);
+                this.saveState();
+                this.renderAllProposals();
+                this.updateDAOStats();
+
+                // Clear form
+                document.getElementById('proposal-title').value = '';
+                document.getElementById('proposal-description').value = '';
+
+                this.log('Proposal submitted successfully', 'success');
+                this.switchView('dao');
+            },
+
+            renderDAOProposals() {
+                const container = document.getElementById('dao-proposals-list');
+                const activeProposals = this.state.proposals.filter(p => p.status === 'active');
+
+                if (activeProposals.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <i class="fas fa-vote-yea" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No active proposals</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = activeProposals.map(proposal => {
+                    const totalVotes = proposal.votesFor + proposal.votesAgainst + proposal.votesAbstain;
+                    const forPercentage = totalVotes > 0 ? (proposal.votesFor / totalVotes * 100).toFixed(1) : 0;
+                    const againstPercentage = totalVotes > 0 ? (proposal.votesAgainst / totalVotes * 100).toFixed(1) : 0;
+                    const abstainPercentage = totalVotes > 0 ? (proposal.votesAbstain / totalVotes * 100).toFixed(1) : 0;
+                    const timeLeft = Math.max(0, proposal.endsAt - Date.now());
+                    const daysLeft = Math.floor(timeLeft / (24 * 60 * 60 * 1000));
+                    const hoursLeft = Math.floor((timeLeft % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+                    const hasVoted = proposal.voters.includes(this.state.identity?.chainKeys.ethereum.address);
+
+                    return `
+                        <div class="card">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                                <div style="flex: 1;">
+                                    <h3 style="color: hsl(var(--cyan)); margin-bottom: 0.5rem;">${this.escapeHtml(proposal.title)}</h3>
+                                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                        <span class="badge">${proposal.type}</span>
+                                        <span class="badge success">${proposal.status}</span>
+                                        ${hasVoted ? '<span class="badge warning">Voted</span>' : ''}
+                                    </div>
+                                </div>
+                                <div style="text-align: right; color: var(--text-muted); font-size: 0.75rem;">
+                                    <div>${daysLeft}d ${hoursLeft}h left</div>
+                                    <div>Quorum: ${proposal.quorum}%</div>
+                                </div>
+                            </div>
+
+                            <div style="color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.6;">
+                                ${this.escapeHtml(proposal.description)}
+                            </div>
+
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                                Proposed by ${proposal.proposerName} (${proposal.proposer.slice(0, 10)}...)
+                            </div>
+
+                            <div style="margin-bottom: 1rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem;">
+                                    <span style="color: hsl(var(--green));">For: ${proposal.votesFor} (${forPercentage}%)</span>
+                                    <span style="color: hsl(var(--orange));">Against: ${proposal.votesAgainst} (${againstPercentage}%)</span>
+                                    <span style="color: var(--text-muted);">Abstain: ${proposal.votesAbstain} (${abstainPercentage}%)</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div style="display: flex; height: 100%;">
+                                        <div style="width: ${forPercentage}%; background: hsl(var(--green));"></div>
+                                        <div style="width: ${againstPercentage}%; background: hsl(var(--orange));"></div>
+                                        <div style="width: ${abstainPercentage}%; background: var(--text-muted);"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${!hasVoted ? `
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button class="btn btn-primary btn-sm" onclick="IAMDS.vote(${proposal.id}, 'for')" style="flex: 1;">
+                                        <i class="fas fa-thumbs-up"></i> Vote For
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm" onclick="IAMDS.vote(${proposal.id}, 'against')" style="flex: 1;">
+                                        <i class="fas fa-thumbs-down"></i> Vote Against
+                                    </button>
+                                    <button class="btn btn-ghost btn-sm" onclick="IAMDS.vote(${proposal.id}, 'abstain')">
+                                        <i class="fas fa-ban"></i> Abstain
+                                    </button>
+                                </div>
+                            ` : `
+                                <div style="text-align: center; padding: 0.75rem; background: rgba(251, 191, 36, 0.1); border-radius: 0.5rem; color: hsl(var(--yellow));">
+                                    <i class="fas fa-check-circle"></i> You have voted on this proposal
+                                </div>
+                            `}
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            renderAllProposals() {
+                const container = document.getElementById('all-proposals-list');
+
+                if (this.state.proposals.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <i class="fas fa-gavel" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No proposals yet</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = this.state.proposals.slice().reverse().map(proposal => {
+                    const totalVotes = proposal.votesFor + proposal.votesAgainst + proposal.votesAbstain;
+                    const statusColor = proposal.status === 'active' ? 'success' : 
+                                       proposal.status === 'passed' ? 'success' : 
+                                       proposal.status === 'rejected' ? 'error' : '';
+
+                    return `
+                        <div class="card" style="margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div style="flex: 1;">
+                                    <h4 style="margin-bottom: 0.5rem;">${this.escapeHtml(proposal.title)}</h4>
+                                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <span class="badge">${proposal.type}</span>
+                                        <span class="badge ${statusColor}">${proposal.status}</span>
+                                    </div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                                        ${proposal.description.slice(0, 100)}${proposal.description.length > 100 ? '...' : ''}
+                                    </div>
+                                </div>
+                                <div style="text-align: right; font-size: 0.85rem; color: var(--text-muted);">
+                                    <div>${totalVotes} votes</div>
+                                    <div>${new Date(proposal.createdAt).toLocaleDateString()}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            vote(proposalId, voteType) {
+                if (!this.state.identity) {
+                    this.log('Generate identity first', 'error');
+                    return;
+                }
+
+                const proposal = this.state.proposals.find(p => p.id === proposalId);
+                if (!proposal) return;
+
+                const voterAddress = this.state.identity.chainKeys.ethereum.address;
+
+                if (proposal.voters.includes(voterAddress)) {
+                    this.log('You have already voted on this proposal', 'error');
+                    return;
+                }
+
+                // Calculate voting power (based on IAM tokens held)
+                const votingPower = Math.max(1, Math.floor(this.state.tokens / 100));
+
+                if (voteType === 'for') {
+                    proposal.votesFor += votingPower;
+                } else if (voteType === 'against') {
+                    proposal.votesAgainst += votingPower;
+                } else if (voteType === 'abstain') {
+                    proposal.votesAbstain += votingPower;
+                }
+
+                proposal.voters.push(voterAddress);
+
+                // Record vote
+                this.state.votes.push({
+                    id: Date.now(),
+                    proposalId: proposal.id,
+                    voter: voterAddress,
+                    voteType,
+                    votingPower,
+                    timestamp: Date.now()
+                });
+
+                // Check if proposal should be finalized
+                this.checkProposalStatus(proposal);
+
+                this.saveState();
+                this.renderDAOProposals();
+                this.updateDAOStats();
+
+                this.log(`Vote cast: ${voteType} (power: ${votingPower})`, 'success');
+            },
+
+            checkProposalStatus(proposal) {
+                const now = Date.now();
+                if (now >= proposal.endsAt && proposal.status === 'active') {
+                    const totalVotes = proposal.votesFor + proposal.votesAgainst + proposal.votesAbstain;
+                    const quorumReached = (totalVotes / (this.state.tokens || 1)) * 100 >= proposal.quorum;
+                    
+                    if (quorumReached && proposal.votesFor > proposal.votesAgainst) {
+                        proposal.status = 'passed';
+                    } else {
+                        proposal.status = 'rejected';
+                    }
+                }
+            },
+
+            updateDAOStats() {
+                // Update voting power
+                const votingPower = Math.max(1, Math.floor(this.state.tokens / 100));
+                document.getElementById('voting-power').textContent = votingPower;
+
+                // Update active proposals count
+                const activeCount = this.state.proposals.filter(p => p.status === 'active').length;
+                document.getElementById('active-proposals-count').textContent = activeCount;
+
+                // Update total votes
+                document.getElementById('total-votes').textContent = this.state.votes.length;
+            },
+
+            // ===== Resource URI System =====
+            registerResource() {
+                const type = document.getElementById('resource-type').value;
+                const name = document.getElementById('resource-name').value.trim();
+                const path = document.getElementById('resource-path').value.trim();
+                const source = document.getElementById('resource-source').value.trim();
+                const description = document.getElementById('resource-description').value.trim();
+
+                if (!name || !path) {
+                    this.log('Enter resource name and path', 'error');
+                    return;
+                }
+
+                const uri = `iamds://${type}/${name}${path}`;
+
+                const resource = {
+                    id: Date.now(),
+                    type,
+                    name,
+                    path,
+                    source,
+                    description,
+                    uri,
+                    accessCount: 0,
+                    createdAt: Date.now(),
+                    lastAccessed: null
+                };
+
+                this.state.resources.push(resource);
+                this.saveState();
+                this.renderResources();
+
+                // Clear form
+                document.getElementById('resource-name').value = '';
+                document.getElementById('resource-path').value = '';
+                document.getElementById('resource-source').value = '';
+                document.getElementById('resource-description').value = '';
+
+                this.log(`Resource registered: ${uri}`, 'success');
+            },
+
+            renderResources() {
+                const container = document.getElementById('resources-list');
+
+                if (this.state.resources.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <i class="fas fa-server" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No resources registered yet</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = this.state.resources.map(resource => {
+                    const icon = {
+                        'api': 'fas fa-plug',
+                        'video': 'fas fa-video',
+                        'audio': 'fas fa-music',
+                        'app': 'fas fa-window-maximize',
+                        'data': 'fas fa-database',
+                        'file': 'fas fa-file'
+                    }[resource.type] || 'fas fa-circle';
+
+                    return `
+                        <div class="file-item">
+                            <div class="file-info">
+                                <div class="file-icon"><i class="${icon}"></i></div>
+                                <div class="file-details">
+                                    <div class="file-name">${this.escapeHtml(resource.name)}</div>
+                                    <div class="file-meta" style="margin-bottom: 0.25rem;">${resource.uri}</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                                        ${this.escapeHtml(resource.description || 'No description')}
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                        Accessed ${resource.accessCount} times • ${resource.type}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="file-actions">
+                                <button class="icon-btn" onclick="IAMDS.accessResource(${resource.id})" title="Access">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </button>
+                                <button class="icon-btn" onclick="IAMDS.copyToClipboard('${resource.uri}')" title="Copy URI">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="icon-btn" onclick="IAMDS.deleteResource(${resource.id})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            accessResource(resourceId) {
+                const resource = this.state.resources.find(r => r.id === resourceId);
+                if (!resource) return;
+
+                resource.accessCount++;
+                resource.lastAccessed = Date.now();
+                this.saveState();
+                this.renderResources();
+
+                if (resource.source) {
+                    window.open(resource.source, '_blank');
+                    this.log(`Accessed: ${resource.uri}`, 'success');
+                } else {
+                    this.log(`Resource URI: ${resource.uri}`, 'info');
+                }
+            },
+
+            deleteResource(resourceId) {
+                this.state.resources = this.state.resources.filter(r => r.id !== resourceId);
+                this.saveState();
+                this.renderResources();
+                this.log('Resource deleted', 'success');
+            },
+
+            // ===== Token Management =====
+            claimRewards() {
+                const reward = 100;
+                this.state.tokens += reward;
+                this.saveState();
+                this.renderUI();
+                this.log(`Claimed ${reward} IAM daily rewards!`, 'success');
+            },
+
+            mintTokens() {
+                const amount = 1000;
+                this.state.tokens += amount;
+                this.saveState();
+                this.renderUI();
+                this.log(`Minted ${amount} test IAM tokens`, 'success');
+            },
+
+            // ===== Video Engine =====
+            generateVideo() {
+                const title = document.getElementById('video-title').value.trim();
+                const fps = parseInt(document.getElementById('video-fps').value);
+
+                if (!title) {
+                    this.log('Enter a video title', 'error');
+                    return;
+                }
+
+                const video = {
+                    id: Date.now(),
+                    title,
+                    fps,
+                    frames: 60,
+                    duration: 2,
+                    created: Date.now()
+                };
+
+                this.state.videos.push(video);
+                this.saveState();
+                this.renderVideos();
+
+                document.getElementById('video-title').value = '';
+                this.log('Video generated successfully', 'success');
+            },
+
+            renderVideos() {
+                const container = document.getElementById('video-list');
+
+                if (this.state.videos.length === 0) {
+                    container.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
+                            <i class="fas fa-video" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No videos generated yet</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = this.state.videos.map(video => `
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="color: hsl(var(--cyan));">${video.title}</h3>
+                            <span class="badge">${video.fps} FPS</span>
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            ${video.frames} frames • ${video.duration}s duration
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">
+                            Created: ${new Date(video.created).toLocaleString()}
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-ghost" onclick="IAMDS.deleteVideo(${video.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            deleteVideo(id) {
+                this.state.videos = this.state.videos.filter(v => v.id !== id);
+                this.saveState();
+                this.renderVideos();
+                this.log('Video deleted', 'success');
+            },
+
+            // ===== Settings =====
+            saveSettings() {
+                this.state.settings.ollamaEndpoint = document.getElementById('ollama-endpoint').value;
+                this.state.settings.displayName = document.getElementById('display-name').value;
+                this.saveState();
+                this.log('Settings saved', 'success');
+            },
+
+            exportState() {
+                const blob = new Blob([JSON.stringify(this.state, null, 2)], {
+                    type: 'application/json'
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `iamds-backup-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                this.log('State exported successfully', 'success');
+            },
+
+            importData() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const data = JSON.parse(event.target.result);
+                            this.state = data;
+                            this.saveState();
+                            this.renderUI();
+                            this.log('Data imported successfully', 'success');
+                        } catch (err) {
+                            this.log('Import failed: ' + err.message, 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            },
+
+            // ===== Wallet Connection =====
+            async connectWallet() {
+                if (!window.ethereum) {
+                    this.log('MetaMask not detected. Please install MetaMask.', 'error');
+                    return;
+                }
+
+                try {
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    const signer = await provider.getSigner();
+                    const address = await signer.getAddress();
+
+                    document.getElementById('wallet-status').textContent = address.slice(0, 6) + '...' + address.slice(-4);
+                    this.log('Wallet connected: ' + address, 'success');
+                } catch (e) {
+                    this.log('Failed to connect wallet: ' + e.message, 'error');
+                }
+            },
+
+            // ===== Utility Functions =====
+            showInfo() {
+                alert(`I-AM-Decentralized-Systems
+Version: 1.0.0 (Genesis Edition)
+Status: ONLINE
+
+Features:
+• Sovereign Identity (DID)
+• Social Feed & Messages
+• IPFS Storage
+• Local Blockchain
+• AI Runtime (Ollama)
+• Agent Swarm
+• Memory Layer
+• ENOS Capsules
+• DEX Engine
+• I-AM-Value (IAM) Token
+• Video Engine
+• Remix IDE Integration
+
+Author: JamesBrianChapman
+License: Dual License (Open Source / Commercial)
+
+© 2025 JamesBrianChapman. All rights reserved.`);
+            },
+
+            copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    this.log('Copied to clipboard', 'success');
+                }).catch(() => {
+                    this.log('Failed to copy', 'error');
+                });
+            },
+
+            formatBytes(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            },
+
+            formatTime(timestamp) {
+                const now = Date.now();
+                const diff = now - timestamp;
+
+                if (diff < 60000) return 'Just now';
+                if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+                if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+                return Math.floor(diff / 86400000) + 'd ago';
+            },
+
+            async sha256(message) {
+                const msgBuffer = new TextEncoder().encode(message);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            },
+
+            arrayToHex(array) {
+                return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+            },
+
+            escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, m => map[m]);
+            },
+
+            generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).slice(2);
+            },
+
+            log(message, type = 'info') {
+                const terminal = document.getElementById('main-terminal');
+                const className = type === 'success' ? 'terminal-success' : type === 'error' ? 'terminal-error' : '';
+                const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : '→';
+
+                const line = document.createElement('div');
+                line.className = `terminal-line ${className}`;
+                line.textContent = `[${icon.toUpperCase()}] ${message}`;
+
+                terminal.appendChild(line);
+                terminal.scrollTop = terminal.scrollHeight;
+
+                this.showToast(message, type);
+            },
+
+            showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}" style="font-size: 1.25rem;"></i>
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                            <div style="font-size: 0.875rem;">${message}</div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            },
+
+            // ===== Background Animation =====
+            initBackgroundAnimation() {
+                const canvas = document.getElementById('bg-canvas');
+                const ctx = canvas.getContext('2d');
+
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                const particles = [];
+                const particleCount = 50;
+
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: (Math.random() - 0.5) * 0.5,
+                        radius: Math.random() * 2 + 1
+                    });
+                }
+
+                function animate() {
+                    ctx.fillStyle = 'rgba(5, 6, 15, 0.1)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    particles.forEach(p => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+
+                        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(0, 255, 255, 0.5)';
+                        ctx.fill();
+                    });
+
+                    // Draw connections
+                    particles.forEach((p1, i) => {
+                        particles.slice(i + 1).forEach(p2 => {
+                            const dx = p1.x - p2.x;
+                            const dy = p1.y - p2.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance < 150) {
+                                ctx.beginPath();
+                                ctx.moveTo(p1.x, p1.y);
+                                ctx.lineTo(p2.x, p2.y);
+                                ctx.strokeStyle = `rgba(0, 255, 255, ${0.2 * (1 - distance / 150)})`;
+                                ctx.lineWidth = 0.5;
+                                ctx.stroke();
+                            }
+                        });
+                    });
+
+                    requestAnimationFrame(animate);
+                }
+
+                animate();
+
+                window.addEventListener('resize', () => {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                });
+            }
+        };
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            IAMDS.init();
+        });
+    </script>
+</body>
+</html>
