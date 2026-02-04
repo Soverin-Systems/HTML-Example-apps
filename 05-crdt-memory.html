@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XHE CRDT Memory Graph</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --lcars-orange: #ff9900;
+      --lcars-blue: #99ccff;
+      --lcars-purple: #cc99cc;
+      --lcars-red: #cc6666;
+      --lcars-gold: #ffcc66;
+      --lcars-teal: #66cccc;
+      --lcars-green: #88cc88;
+      --bg-dark: #000011;
+      --bg-panel: #0a0a1a;
+    }
+    
+    body {
+      font-family: 'Courier New', monospace;
+      background: var(--bg-dark);
+      color: var(--lcars-blue);
+      min-height: 100vh;
+    }
+    
+    .deck-layout {
+      display: grid;
+      grid-template-rows: 70px 1fr 50px;
+      min-height: 100vh;
+    }
+    
+    .command-deck {
+      background: var(--bg-panel);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 4px solid var(--lcars-teal);
+    }
+    
+    .deck-logo {
+      background: linear-gradient(135deg, var(--lcars-teal) 0%, var(--lcars-blue) 100%);
+      padding: 12px 25px;
+      border-radius: 0 0 15px 15px;
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--bg-dark);
+    }
+    
+    .deck-title {
+      margin-left: 20px;
+      font-size: 14px;
+      color: var(--lcars-purple);
+    }
+    
+    .deck-stats {
+      display: flex;
+      gap: 30px;
+      margin-left: auto;
+    }
+    
+    .deck-stat {
+      text-align: center;
+    }
+    
+    .deck-stat-label {
+      font-size: 10px;
+      color: var(--lcars-purple);
+    }
+    
+    .deck-stat-value {
+      font-size: 18px;
+      color: var(--lcars-gold);
+    }
+    
+    .main-area {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 2px;
+    }
+    
+    .graph-panel {
+      background: var(--bg-panel);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .graph-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .graph-title {
+      font-size: 16px;
+      color: var(--lcars-orange);
+    }
+    
+    .graph-controls {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .graph-btn {
+      background: var(--lcars-teal);
+      border: none;
+      padding: 8px 15px;
+      border-radius: 15px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--bg-dark);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .graph-btn:hover { filter: brightness(1.2); }
+    .graph-btn.orange { background: var(--lcars-orange); }
+    .graph-btn.purple { background: var(--lcars-purple); }
+    .graph-btn.green { background: var(--lcars-green); }
+    .graph-btn.red { background: var(--lcars-red); }
+    
+    .graph-canvas {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 2px solid var(--lcars-teal);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+      min-height: 400px;
+    }
+    
+    .graph-svg {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .crdt-node {
+      cursor: pointer;
+    }
+    
+    .crdt-node-circle {
+      fill: rgba(102, 204, 204, 0.3);
+      stroke: var(--lcars-teal);
+      stroke-width: 2;
+      transition: all 0.2s;
+    }
+    
+    .crdt-node:hover .crdt-node-circle {
+      fill: rgba(102, 204, 204, 0.5);
+      stroke: var(--lcars-orange);
+      stroke-width: 3;
+    }
+    
+    .crdt-node-text {
+      fill: var(--lcars-gold);
+      font-size: 11px;
+      font-weight: bold;
+      text-anchor: middle;
+    }
+    
+    .crdt-node-cid {
+      fill: var(--lcars-purple);
+      font-size: 8px;
+      text-anchor: middle;
+    }
+    
+    .crdt-edge {
+      stroke: var(--lcars-teal);
+      stroke-width: 2;
+      opacity: 0.6;
+    }
+    
+    .crdt-node.head .crdt-node-circle {
+      stroke: var(--lcars-gold);
+      fill: rgba(255, 204, 102, 0.2);
+    }
+    
+    .crdt-node.conflict .crdt-node-circle {
+      stroke: var(--lcars-red);
+      fill: rgba(204, 102, 102, 0.2);
+      animation: conflictPulse 1s infinite;
+    }
+    
+    @keyframes conflictPulse {
+      0%, 100% { stroke-width: 2; }
+      50% { stroke-width: 4; }
+    }
+    
+    .control-panel {
+      background: var(--bg-panel);
+      padding: 20px;
+      border-left: 4px solid var(--lcars-purple);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+    }
+    
+    .panel-section {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--lcars-teal);
+      border-radius: 8px;
+      padding: 15px;
+    }
+    
+    .panel-title {
+      color: var(--lcars-orange);
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    
+    .input-row {
+      margin-bottom: 12px;
+    }
+    
+    .input-label {
+      display: block;
+      font-size: 10px;
+      color: var(--lcars-purple);
+      margin-bottom: 5px;
+    }
+    
+    .input-field {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--lcars-teal);
+      color: var(--lcars-blue);
+      padding: 8px;
+      font-family: inherit;
+      font-size: 11px;
+      border-radius: 4px;
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: var(--lcars-orange);
+    }
+    
+    .submit-btn {
+      width: 100%;
+      background: var(--lcars-orange);
+      border: none;
+      padding: 12px;
+      font-family: inherit;
+      font-weight: bold;
+      font-size: 11px;
+      color: var(--bg-dark);
+      cursor: pointer;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+    
+    .submit-btn:hover { filter: brightness(1.2); }
+    
+    .node-details {
+      background: rgba(0,0,0,0.5);
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 10px;
+    }
+    
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(102, 204, 204, 0.1);
+    }
+    
+    .detail-key { color: var(--lcars-purple); }
+    .detail-value { color: var(--lcars-gold); word-break: break-all; max-width: 150px; }
+    
+    .merge-log {
+      background: rgba(0,0,0,0.5);
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(102, 204, 204, 0.1);
+    }
+    
+    .log-time { color: var(--lcars-purple); }
+    
+    .vector-clock {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    
+    .clock-entry {
+      background: var(--lcars-teal);
+      color: var(--bg-dark);
+      padding: 4px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    
+    .status-bar {
+      background: var(--bg-panel);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-top: 3px solid var(--lcars-teal);
+      gap: 30px;
+      font-size: 11px;
+    }
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--lcars-green);
+    }
+    
+    .status-dot.syncing {
+      background: var(--lcars-gold);
+      animation: blink 0.5s infinite;
+    }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    
+    /* Peer simulation */
+    .peer-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .peer-badge {
+      background: var(--lcars-blue);
+      color: var(--bg-dark);
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .peer-badge:hover {
+      background: var(--lcars-orange);
+    }
+    
+    .peer-badge.active {
+      background: var(--lcars-gold);
+    }
+  </style>
+</head>
+<body>
+  <div class="deck-layout">
+    <header class="command-deck">
+      <div class="deck-logo">CRDT GRAPH</div>
+      <div class="deck-title">Conflict-Free Replicated Memory // Merkle-DAG Structure</div>
+      <div class="deck-stats">
+        <div class="deck-stat">
+          <div class="deck-stat-label">Nodes</div>
+          <div class="deck-stat-value" id="nodeCount" data-testid="node-count">0</div>
+        </div>
+        <div class="deck-stat">
+          <div class="deck-stat-label">Heads</div>
+          <div class="deck-stat-value" id="headCount" data-testid="head-count">0</div>
+        </div>
+        <div class="deck-stat">
+          <div class="deck-stat-label">Merges</div>
+          <div class="deck-stat-value" id="mergeCount" data-testid="merge-count">0</div>
+        </div>
+        <div class="deck-stat">
+          <div class="deck-stat-label">Conflicts</div>
+          <div class="deck-stat-value" id="conflictCount" data-testid="conflict-count">0</div>
+        </div>
+      </div>
+    </header>
+    
+    <div class="main-area">
+      <div class="graph-panel">
+        <div class="graph-header">
+          <span class="graph-title">Merkle-DAG Visualization</span>
+          <div class="graph-controls">
+            <button class="graph-btn orange" onclick="initGraph()" data-testid="init-btn">Initialize</button>
+            <button class="graph-btn" onclick="simulatePeer()" data-testid="peer-btn">Add Peer</button>
+            <button class="graph-btn purple" onclick="merge()" data-testid="merge-btn">Merge</button>
+            <button class="graph-btn green" onclick="sync()" data-testid="sync-btn">Sync All</button>
+            <button class="graph-btn red" onclick="resetGraph()" data-testid="reset-btn">Reset</button>
+          </div>
+        </div>
+        
+        <div class="graph-canvas" id="graphCanvas" data-testid="graph-canvas">
+          <svg class="graph-svg" id="graphSvg">
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="var(--lcars-teal)" />
+              </marker>
+            </defs>
+          </svg>
+        </div>
+      </div>
+      
+      <div class="control-panel">
+        <div class="panel-section">
+          <div class="panel-title">Add Node</div>
+          <div class="input-row">
+            <label class="input-label">Key</label>
+            <input type="text" class="input-field" id="nodeKey" placeholder="e.g., user.name" data-testid="node-key">
+          </div>
+          <div class="input-row">
+            <label class="input-label">Value</label>
+            <input type="text" class="input-field" id="nodeValue" placeholder="e.g., Alice" data-testid="node-value">
+          </div>
+          <div class="input-row">
+            <label class="input-label">Parent CID (optional)</label>
+            <input type="text" class="input-field" id="parentCid" placeholder="Leave empty for head">
+          </div>
+          <button class="submit-btn" onclick="addNode()" data-testid="add-node-btn">Add Node</button>
+        </div>
+        
+        <div class="panel-section">
+          <div class="panel-title">Active Peers</div>
+          <div class="peer-container" id="peerContainer" data-testid="peer-container">
+            <div class="peer-badge active" onclick="switchPeer('local')">Local</div>
+          </div>
+        </div>
+        
+        <div class="panel-section">
+          <div class="panel-title">Selected Node</div>
+          <div class="node-details" id="nodeDetails" data-testid="node-details">
+            <div class="detail-row">
+              <span class="detail-key">CID</span>
+              <span class="detail-value">--</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">Key</span>
+              <span class="detail-value">--</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">Value</span>
+              <span class="detail-value">--</span>
+            </div>
+          </div>
+          
+          <div class="panel-title" style="margin-top: 15px;">Vector Clock</div>
+          <div class="vector-clock" id="vectorClock" data-testid="vector-clock">
+            <div class="clock-entry">local: 0</div>
+          </div>
+        </div>
+        
+        <div class="panel-section" style="flex: 1;">
+          <div class="panel-title">Merge Log</div>
+          <div class="merge-log" id="mergeLog" data-testid="merge-log">
+            <div class="log-entry" style="color: var(--lcars-purple);">
+              No operations yet. Initialize the graph to begin.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <footer class="status-bar">
+      <div class="status-item">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText" data-testid="status-text">Ready</span>
+      </div>
+      <div class="status-item">
+        <span>Consistency:</span>
+        <span style="color: var(--lcars-gold);" id="consistency">Eventual</span>
+      </div>
+      <div class="status-item">
+        <span>Protocol: CRDT/G-Set + Merkle-DAG</span>
+      </div>
+      <div class="status-item" style="margin-left: auto;">
+        <span>Conflict Resolution: LWW + Causal</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // ============================================
+    // XHE CRDT MEMORY GRAPH
+    // Conflict-Free Replicated Data Types
+    // with Merkle-DAG Structure
+    // ============================================
+    
+    // Crypto utilities
+    const GraphCrypto = {
+      async hash(data) {
+        const encoded = new TextEncoder().encode(JSON.stringify(data));
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+        return 'Qm' + Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('').substring(0, 44);
+      }
+    };
+    
+    // Vector Clock for causal ordering
+    class VectorClock {
+      constructor() {
+        this.clock = {};
+      }
+      
+      increment(nodeId) {
+        this.clock[nodeId] = (this.clock[nodeId] || 0) + 1;
+        return this;
+      }
+      
+      merge(other) {
+        for (const [nodeId, time] of Object.entries(other.clock)) {
+          this.clock[nodeId] = Math.max(this.clock[nodeId] || 0, time);
+        }
+        return this;
+      }
+      
+      happensBefore(other) {
+        let dominated = false;
+        for (const nodeId of new Set([...Object.keys(this.clock), ...Object.keys(other.clock)])) {
+          const thisTime = this.clock[nodeId] || 0;
+          const otherTime = other.clock[nodeId] || 0;
+          if (thisTime > otherTime) return false;
+          if (thisTime < otherTime) dominated = true;
+        }
+        return dominated;
+      }
+      
+      concurrent(other) {
+        return !this.happensBefore(other) && !other.happensBefore(this);
+      }
+      
+      clone() {
+        const vc = new VectorClock();
+        vc.clock = { ...this.clock };
+        return vc;
+      }
+      
+      toEntries() {
+        return Object.entries(this.clock);
+      }
+    }
+    
+    // CRDT Node
+    class CRDTNode {
+      constructor(key, value, parents = [], peerId = 'local') {
+        this.key = key;
+        this.value = value;
+        this.parents = parents;
+        this.timestamp = Date.now();
+        this.peerId = peerId;
+        this.cid = null;
+        this.vectorClock = new VectorClock();
+      }
+      
+      async computeCID() {
+        this.cid = await GraphCrypto.hash({
+          key: this.key,
+          value: this.value,
+          parents: this.parents,
+          timestamp: this.timestamp,
+          peerId: this.peerId
+        });
+        return this.cid;
+      }
+    }
+    
+    // CRDT Memory Graph (G-Set with Merkle-DAG)
+    class CRDTMemoryGraph {
+      constructor(peerId = 'local') {
+        this.peerId = peerId;
+        this.nodes = new Map(); // CID -> Node
+        this.edges = new Map(); // CID -> [parent CIDs]
+        this.heads = new Set(); // Current head CIDs
+        this.vectorClock = new VectorClock();
+        this.mergeCount = 0;
+        this.conflictCount = 0;
+      }
+      
+      async addNode(key, value, parentCids = null) {
+        // If no parents specified, use current heads
+        const parents = parentCids || Array.from(this.heads);
+        
+        // Increment vector clock
+        this.vectorClock.increment(this.peerId);
+        
+        // Create node
+        const node = new CRDTNode(key, value, parents, this.peerId);
+        node.vectorClock = this.vectorClock.clone();
+        await node.computeCID();
+        
+        // Add to graph
+        this.nodes.set(node.cid, node);
+        this.edges.set(node.cid, parents);
+        
+        // Update heads (remove parents, add new node)
+        parents.forEach(p => this.heads.delete(p));
+        this.heads.add(node.cid);
+        
+        return node;
+      }
+      
+      // Merge with another graph (conflict-free)
+      merge(other) {
+        let conflictsFound = 0;
+        
+        // Union of nodes (G-Set property: only grow, never shrink)
+        for (const [cid, node] of other.nodes) {
+          if (!this.nodes.has(cid)) {
+            this.nodes.set(cid, node);
+            this.edges.set(cid, node.parents);
+          }
+        }
+        
+        // Merge vector clocks
+        this.vectorClock.merge(other.vectorClock);
+        
+        // Recompute heads
+        const allParents = new Set();
+        for (const parents of this.edges.values()) {
+          parents.forEach(p => allParents.add(p));
+        }
+        
+        this.heads = new Set(
+          Array.from(this.nodes.keys()).filter(cid => !allParents.has(cid))
+        );
+        
+        // Detect conflicts (concurrent writes to same key)
+        const keyLatest = new Map();
+        for (const [cid, node] of this.nodes) {
+          const existing = keyLatest.get(node.key);
+          if (existing) {
+            const existingNode = this.nodes.get(existing);
+            if (node.vectorClock.concurrent(existingNode.vectorClock)) {
+              conflictsFound++;
+              // LWW resolution: keep newer timestamp
+              if (node.timestamp > existingNode.timestamp) {
+                keyLatest.set(node.key, cid);
+              }
+            } else if (node.vectorClock.happensBefore(existingNode.vectorClock)) {
+              // Keep existing
+            } else {
+              keyLatest.set(node.key, cid);
+            }
+          } else {
+            keyLatest.set(node.key, cid);
+          }
+        }
+        
+        this.mergeCount++;
+        this.conflictCount += conflictsFound;
+        
+        return { merged: true, conflicts: conflictsFound };
+      }
+      
+      // Query with causal ordering
+      query(filter = () => true) {
+        const sorted = this.topologicalSort();
+        return sorted.filter(node => filter(node));
+      }
+      
+      // Get current state (resolved)
+      getCurrentState() {
+        const state = {};
+        const sorted = this.topologicalSort();
+        
+        // Apply nodes in causal order
+        for (const node of sorted) {
+          state[node.key] = node.value;
+        }
+        
+        return state;
+      }
+      
+      // Topological sort using DFS
+      topologicalSort() {
+        const visited = new Set();
+        const result = [];
+        
+        const dfs = (cid) => {
+          if (visited.has(cid)) return;
+          visited.add(cid);
+          
+          const parents = this.edges.get(cid) || [];
+          parents.forEach(p => dfs(p));
+          
+          const node = this.nodes.get(cid);
+          if (node) result.push(node);
+        };
+        
+        this.heads.forEach(head => dfs(head));
+        
+        return result;
+      }
+      
+      getNode(cid) {
+        return this.nodes.get(cid);
+      }
+      
+      getHeads() {
+        return Array.from(this.heads).map(cid => this.nodes.get(cid));
+      }
+      
+      getStats() {
+        return {
+          nodes: this.nodes.size,
+          heads: this.heads.size,
+          merges: this.mergeCount,
+          conflicts: this.conflictCount
+        };
+      }
+    }
+    
+    // Global state
+    let graphs = new Map(); // peerId -> CRDTMemoryGraph
+    let currentPeer = 'local';
+    let selectedNode = null;
+    
+    function getCurrentGraph() {
+      return graphs.get(currentPeer);
+    }
+    
+    // UI Functions
+    function log(message) {
+      const logDiv = document.getElementById('mergeLog');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="log-time">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+      logDiv.appendChild(entry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+    
+    function updateStats() {
+      const graph = getCurrentGraph();
+      if (!graph) return;
+      
+      const stats = graph.getStats();
+      document.getElementById('nodeCount').textContent = stats.nodes;
+      document.getElementById('headCount').textContent = stats.heads;
+      document.getElementById('mergeCount').textContent = stats.merges;
+      document.getElementById('conflictCount').textContent = stats.conflicts;
+      
+      // Update vector clock display
+      const clockDiv = document.getElementById('vectorClock');
+      clockDiv.innerHTML = graph.vectorClock.toEntries()
+        .map(([id, time]) => `<div class="clock-entry">${id}: ${time}</div>`)
+        .join('') || '<div class="clock-entry">empty</div>';
+    }
+    
+    function renderGraph() {
+      const svg = document.getElementById('graphSvg');
+      const graph = getCurrentGraph();
+      
+      // Clear SVG
+      svg.innerHTML = `
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--lcars-teal)" />
+          </marker>
+        </defs>
+      `;
+      
+      if (!graph || graph.nodes.size === 0) {
+        svg.innerHTML += `
+          <text x="50%" y="50%" text-anchor="middle" fill="var(--lcars-purple)" font-size="14">
+            No nodes yet. Initialize the graph to begin.
+          </text>
+        `;
+        return;
+      }
+      
+      // Layout nodes (simple layered layout)
+      const nodes = Array.from(graph.nodes.values());
+      const heads = graph.heads;
+      const positions = new Map();
+      
+      // Assign layers based on depth
+      const layers = new Map();
+      const visited = new Set();
+      
+      function assignLayer(cid, layer) {
+        if (visited.has(cid)) return;
+        visited.add(cid);
+        
+        const node = graph.nodes.get(cid);
+        if (!node) return;
+        
+        const currentLayer = layers.get(cid) || 0;
+        layers.set(cid, Math.max(currentLayer, layer));
+        
+        const parents = graph.edges.get(cid) || [];
+        parents.forEach(p => assignLayer(p, layer + 1));
+      }
+      
+      heads.forEach(h => assignLayer(h, 0));
+      
+      // Group by layer
+      const layerGroups = new Map();
+      for (const [cid, layer] of layers) {
+        if (!layerGroups.has(layer)) layerGroups.set(layer, []);
+        layerGroups.get(layer).push(cid);
+      }
+      
+      // Assign positions
+      const svgWidth = svg.getBoundingClientRect().width || 800;
+      const layerHeight = 100;
+      const maxLayer = Math.max(...layers.values());
+      
+      for (const [layer, cids] of layerGroups) {
+        const spacing = svgWidth / (cids.length + 1);
+        cids.forEach((cid, i) => {
+          positions.set(cid, {
+            x: spacing * (i + 1),
+            y: 60 + layer * layerHeight
+          });
+        });
+      }
+      
+      // Draw edges
+      for (const [cid, parents] of graph.edges) {
+        const pos = positions.get(cid);
+        if (!pos) continue;
+        
+        parents.forEach(parentCid => {
+          const parentPos = positions.get(parentCid);
+          if (!parentPos) return;
+          
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('class', 'crdt-edge');
+          line.setAttribute('x1', pos.x);
+          line.setAttribute('y1', pos.y);
+          line.setAttribute('x2', parentPos.x);
+          line.setAttribute('y2', parentPos.y - 25);
+          line.setAttribute('marker-end', 'url(#arrow)');
+          svg.appendChild(line);
+        });
+      }
+      
+      // Draw nodes
+      for (const node of nodes) {
+        const pos = positions.get(node.cid);
+        if (!pos) continue;
+        
+        const isHead = heads.has(node.cid);
+        
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', `crdt-node ${isHead ? 'head' : ''}`);
+        g.onclick = () => selectNode(node);
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('class', 'crdt-node-circle');
+        circle.setAttribute('cx', pos.x);
+        circle.setAttribute('cy', pos.y);
+        circle.setAttribute('r', 30);
+        
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('class', 'crdt-node-text');
+        text.setAttribute('x', pos.x);
+        text.setAttribute('y', pos.y);
+        text.textContent = node.key.substring(0, 8);
+        
+        const cidText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        cidText.setAttribute('class', 'crdt-node-cid');
+        cidText.setAttribute('x', pos.x);
+        cidText.setAttribute('y', pos.y + 12);
+        cidText.textContent = node.cid.substring(0, 8);
+        
+        g.appendChild(circle);
+        g.appendChild(text);
+        g.appendChild(cidText);
+        svg.appendChild(g);
+      }
+    }
+    
+    function selectNode(node) {
+      selectedNode = node;
+      
+      const details = document.getElementById('nodeDetails');
+      details.innerHTML = `
+        <div class="detail-row">
+          <span class="detail-key">CID</span>
+          <span class="detail-value">${node.cid}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Key</span>
+          <span class="detail-value">${node.key}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Value</span>
+          <span class="detail-value">${JSON.stringify(node.value)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Peer</span>
+          <span class="detail-value">${node.peerId}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-key">Parents</span>
+          <span class="detail-value">${node.parents.length || 'Genesis'}</span>
+        </div>
+      `;
+    }
+    
+    function updatePeerBadges() {
+      const container = document.getElementById('peerContainer');
+      container.innerHTML = Array.from(graphs.keys())
+        .map(id => `<div class="peer-badge ${id === currentPeer ? 'active' : ''}" onclick="switchPeer('${id}')">${id}</div>`)
+        .join('');
+    }
+    
+    function setStatus(text, syncing = false) {
+      document.getElementById('statusText').textContent = text;
+      document.getElementById('statusDot').classList.toggle('syncing', syncing);
+    }
+    
+    // Control Functions
+    async function initGraph() {
+      graphs.set('local', new CRDTMemoryGraph('local'));
+      currentPeer = 'local';
+      
+      // Add genesis node
+      const graph = getCurrentGraph();
+      await graph.addNode('genesis', { initialized: true, timestamp: Date.now() }, []);
+      
+      log('Graph initialized with genesis node');
+      updateStats();
+      renderGraph();
+      updatePeerBadges();
+      setStatus('Graph initialized');
+    }
+    
+    async function addNode() {
+      const graph = getCurrentGraph();
+      if (!graph) {
+        log('ERROR: Initialize graph first');
+        return;
+      }
+      
+      const key = document.getElementById('nodeKey').value || `key_${Date.now()}`;
+      let value = document.getElementById('nodeValue').value || 'value';
+      const parentCid = document.getElementById('parentCid').value || null;
+      
+      // Try to parse value as JSON
+      try {
+        value = JSON.parse(value);
+      } catch (e) {
+        // Keep as string
+      }
+      
+      const parents = parentCid ? [parentCid] : null;
+      const node = await graph.addNode(key, value, parents);
+      
+      log(`Added node: ${key} = ${JSON.stringify(value).substring(0, 20)}...`);
+      
+      // Clear inputs
+      document.getElementById('nodeKey').value = '';
+      document.getElementById('nodeValue').value = '';
+      document.getElementById('parentCid').value = '';
+      
+      updateStats();
+      renderGraph();
+    }
+    
+    async function simulatePeer() {
+      const peerCount = graphs.size;
+      const peerId = `peer_${peerCount}`;
+      
+      const graph = new CRDTMemoryGraph(peerId);
+      
+      // Copy nodes from local (simulate initial sync)
+      const local = graphs.get('local');
+      if (local) {
+        for (const [cid, node] of local.nodes) {
+          graph.nodes.set(cid, node);
+          graph.edges.set(cid, node.parents);
+        }
+        graph.heads = new Set(local.heads);
+        graph.vectorClock.merge(local.vectorClock);
+      }
+      
+      // Add a unique node to create divergence
+      await graph.addNode(`${peerId}_data`, { source: peerId, time: Date.now() });
+      
+      graphs.set(peerId, graph);
+      
+      log(`Peer ${peerId} joined network`);
+      updatePeerBadges();
+    }
+    
+    function switchPeer(peerId) {
+      currentPeer = peerId;
+      updatePeerBadges();
+      updateStats();
+      renderGraph();
+      setStatus(`Viewing: ${peerId}`);
+    }
+    
+    function merge() {
+      const graph = getCurrentGraph();
+      if (!graph) {
+        log('ERROR: Initialize graph first');
+        return;
+      }
+      
+      setStatus('Merging...', true);
+      
+      let totalConflicts = 0;
+      for (const [peerId, peerGraph] of graphs) {
+        if (peerId !== currentPeer) {
+          const result = graph.merge(peerGraph);
+          totalConflicts += result.conflicts;
+          log(`Merged with ${peerId}: ${result.conflicts} conflicts`);
+        }
+      }
+      
+      log(`Merge complete. Total conflicts resolved: ${totalConflicts}`);
+      
+      updateStats();
+      renderGraph();
+      setStatus('Merge complete');
+    }
+    
+    function sync() {
+      setStatus('Syncing all peers...', true);
+      
+      // Get all unique nodes across all graphs
+      const allNodes = new Map();
+      const allEdges = new Map();
+      
+      for (const graph of graphs.values()) {
+        for (const [cid, node] of graph.nodes) {
+          allNodes.set(cid, node);
+          allEdges.set(cid, node.parents);
+        }
+      }
+      
+      // Apply to all graphs
+      for (const graph of graphs.values()) {
+        for (const [cid, node] of allNodes) {
+          if (!graph.nodes.has(cid)) {
+            graph.nodes.set(cid, node);
+            graph.edges.set(cid, allEdges.get(cid));
+          }
+        }
+        
+        // Recompute heads
+        const allParents = new Set();
+        for (const parents of graph.edges.values()) {
+          parents.forEach(p => allParents.add(p));
+        }
+        graph.heads = new Set(
+          Array.from(graph.nodes.keys()).filter(cid => !allParents.has(cid))
+        );
+      }
+      
+      log('All peers synchronized');
+      updateStats();
+      renderGraph();
+      setStatus('Sync complete');
+    }
+    
+    function resetGraph() {
+      if (confirm('Reset all graphs?')) {
+        graphs.clear();
+        currentPeer = 'local';
+        selectedNode = null;
+        
+        document.getElementById('mergeLog').innerHTML = `
+          <div class="log-entry" style="color: var(--lcars-purple);">
+            Graph reset. Initialize to begin.
+          </div>
+        `;
+        
+        document.getElementById('nodeCount').textContent = '0';
+        document.getElementById('headCount').textContent = '0';
+        document.getElementById('mergeCount').textContent = '0';
+        document.getElementById('conflictCount').textContent = '0';
+        
+        document.getElementById('peerContainer').innerHTML = '<div class="peer-badge active">Local</div>';
+        
+        renderGraph();
+        setStatus('Ready');
+      }
+    }
+    
+    // Initialize on load
+    window.addEventListener('load', () => {
+      renderGraph();
+    });
+    
+    // Handle window resize
+    window.addEventListener('resize', renderGraph);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XHE JSONFlow Orchestration Engine</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --lcars-orange: #ff9900;
+      --lcars-blue: #99ccff;
+      --lcars-purple: #cc99cc;
+      --lcars-red: #cc6666;
+      --lcars-gold: #ffcc66;
+      --lcars-teal: #66cccc;
+      --lcars-green: #88cc88;
+      --bg-dark: #000011;
+      --bg-panel: #0a0a1a;
+    }
+    
+    body {
+      font-family: 'Courier New', monospace;
+      background: var(--bg-dark);
+      color: var(--lcars-blue);
+      min-height: 100vh;
+    }
+    
+    .bridge-layout {
+      display: grid;
+      grid-template-columns: 250px 1fr 300px;
+      grid-template-rows: 60px 1fr 50px;
+      min-height: 100vh;
+      gap: 2px;
+    }
+    
+    .top-bar {
+      grid-column: 1 / -1;
+      background: linear-gradient(90deg, var(--lcars-orange) 0%, var(--lcars-orange) 180px, var(--bg-panel) 180px);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+    }
+    
+    .top-bar-title {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--bg-dark);
+      width: 180px;
+      text-align: center;
+    }
+    
+    .top-bar-info {
+      margin-left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 40px;
+    }
+    
+    .top-bar-stat {
+      text-align: center;
+    }
+    
+    .top-bar-label { font-size: 10px; color: var(--lcars-purple); }
+    .top-bar-value { font-size: 16px; color: var(--lcars-gold); }
+    
+    .top-bar-end {
+      margin-left: auto;
+      background: var(--lcars-purple);
+      padding: 10px 30px;
+      border-radius: 0 0 0 20px;
+      color: var(--bg-dark);
+      font-weight: bold;
+    }
+    
+    .workflow-panel {
+      background: var(--bg-panel);
+      padding: 15px;
+      border-right: 3px solid var(--lcars-teal);
+      overflow-y: auto;
+    }
+    
+    .panel-header {
+      color: var(--lcars-orange);
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--lcars-orange);
+    }
+    
+    .workflow-item {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--lcars-teal);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .workflow-item:hover {
+      border-color: var(--lcars-orange);
+      transform: translateX(5px);
+    }
+    
+    .workflow-item.selected {
+      border-color: var(--lcars-gold);
+      background: rgba(255, 204, 102, 0.1);
+    }
+    
+    .workflow-name {
+      color: var(--lcars-gold);
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    
+    .workflow-desc {
+      color: var(--lcars-blue);
+      font-size: 10px;
+    }
+    
+    .workflow-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 9px;
+      color: var(--lcars-purple);
+    }
+    
+    .step-library {
+      margin-top: 20px;
+    }
+    
+    .step-type {
+      background: var(--lcars-teal);
+      color: var(--bg-dark);
+      padding: 8px 12px;
+      border-radius: 15px;
+      font-size: 11px;
+      font-weight: bold;
+      margin: 5px 5px 5px 0;
+      display: inline-block;
+      cursor: grab;
+    }
+    
+    .step-type.ai { background: var(--lcars-purple); }
+    .step-type.crypto { background: var(--lcars-gold); }
+    .step-type.transform { background: var(--lcars-blue); }
+    .step-type.ipfs { background: var(--lcars-green); }
+    
+    .main-canvas {
+      background: var(--bg-panel);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .canvas-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .canvas-title {
+      font-size: 16px;
+      color: var(--lcars-orange);
+    }
+    
+    .canvas-controls {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .canvas-btn {
+      background: var(--lcars-teal);
+      border: none;
+      padding: 8px 15px;
+      border-radius: 15px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--bg-dark);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .canvas-btn:hover { filter: brightness(1.2); }
+    .canvas-btn.orange { background: var(--lcars-orange); }
+    .canvas-btn.red { background: var(--lcars-red); }
+    
+    .dag-container {
+      background: rgba(0,0,0,0.3);
+      border: 2px solid var(--lcars-teal);
+      border-radius: 10px;
+      height: calc(100% - 60px);
+      overflow: auto;
+      position: relative;
+    }
+    
+    .dag-svg {
+      width: 100%;
+      height: 100%;
+      min-height: 400px;
+    }
+    
+    .dag-node {
+      cursor: pointer;
+    }
+    
+    .dag-node-rect {
+      fill: rgba(102, 204, 204, 0.2);
+      stroke: var(--lcars-teal);
+      stroke-width: 2;
+      rx: 8;
+      transition: all 0.2s;
+    }
+    
+    .dag-node:hover .dag-node-rect {
+      fill: rgba(102, 204, 204, 0.4);
+      stroke: var(--lcars-orange);
+    }
+    
+    .dag-node-text {
+      fill: var(--lcars-gold);
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .dag-node-type {
+      fill: var(--lcars-purple);
+      font-size: 10px;
+    }
+    
+    .dag-edge {
+      stroke: var(--lcars-teal);
+      stroke-width: 2;
+      fill: none;
+      marker-end: url(#arrowhead);
+    }
+    
+    .dag-node.running .dag-node-rect {
+      stroke: var(--lcars-gold);
+      animation: runPulse 1s infinite;
+    }
+    
+    .dag-node.success .dag-node-rect {
+      stroke: var(--lcars-green);
+      fill: rgba(136, 204, 136, 0.2);
+    }
+    
+    .dag-node.error .dag-node-rect {
+      stroke: var(--lcars-red);
+      fill: rgba(204, 102, 102, 0.2);
+    }
+    
+    @keyframes runPulse {
+      0%, 100% { stroke-width: 2; }
+      50% { stroke-width: 4; }
+    }
+    
+    .right-panel {
+      background: var(--bg-panel);
+      padding: 15px;
+      border-left: 3px solid var(--lcars-purple);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+    }
+    
+    .config-section {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--lcars-teal);
+      border-radius: 8px;
+      padding: 15px;
+    }
+    
+    .config-title {
+      color: var(--lcars-orange);
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    
+    .config-row {
+      margin-bottom: 10px;
+    }
+    
+    .config-label {
+      display: block;
+      font-size: 10px;
+      color: var(--lcars-purple);
+      margin-bottom: 5px;
+    }
+    
+    .config-input {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--lcars-teal);
+      color: var(--lcars-blue);
+      padding: 8px;
+      font-family: inherit;
+      font-size: 11px;
+      border-radius: 4px;
+    }
+    
+    .config-input:focus {
+      outline: none;
+      border-color: var(--lcars-orange);
+    }
+    
+    .receipt-area {
+      flex: 1;
+      background: rgba(0,0,0,0.5);
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 10px;
+      overflow-y: auto;
+      max-height: 300px;
+    }
+    
+    .receipt-item {
+      background: rgba(102, 204, 204, 0.1);
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    
+    .receipt-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    
+    .receipt-step {
+      color: var(--lcars-gold);
+      font-weight: bold;
+    }
+    
+    .receipt-status {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 9px;
+    }
+    
+    .receipt-status.success { background: var(--lcars-green); color: var(--bg-dark); }
+    .receipt-status.error { background: var(--lcars-red); color: white; }
+    .receipt-status.running { background: var(--lcars-gold); color: var(--bg-dark); }
+    
+    .receipt-hash {
+      color: var(--lcars-purple);
+      word-break: break-all;
+    }
+    
+    .bottom-bar {
+      grid-column: 1 / -1;
+      background: var(--bg-panel);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-top: 3px solid var(--lcars-orange);
+      gap: 30px;
+      font-size: 11px;
+    }
+    
+    .bottom-stat {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .bottom-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--lcars-teal);
+    }
+    
+    .bottom-dot.active { animation: blink 1s infinite; }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    
+    /* JSON Editor Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,17,0.95);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-overlay.active { display: flex; }
+    
+    .modal-content {
+      background: var(--bg-panel);
+      border: 2px solid var(--lcars-orange);
+      border-radius: 15px;
+      padding: 25px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .modal-title {
+      font-size: 18px;
+      color: var(--lcars-orange);
+    }
+    
+    .modal-close {
+      background: var(--lcars-red);
+      border: none;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--bg-dark);
+    }
+    
+    .json-editor {
+      width: 100%;
+      height: 400px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--lcars-teal);
+      color: var(--lcars-blue);
+      padding: 15px;
+      font-family: inherit;
+      font-size: 12px;
+      border-radius: 8px;
+      resize: vertical;
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .modal-btn {
+      flex: 1;
+      background: var(--lcars-orange);
+      border: none;
+      padding: 12px;
+      font-family: inherit;
+      font-weight: bold;
+      color: var(--bg-dark);
+      cursor: pointer;
+      border-radius: 8px;
+    }
+    
+    .modal-btn.secondary { background: var(--lcars-teal); }
+  </style>
+</head>
+<body>
+  <div class="bridge-layout">
+    <header class="top-bar">
+      <div class="top-bar-title">JSONFLOW</div>
+      <div class="top-bar-info">
+        <div class="top-bar-stat">
+          <div class="top-bar-label">Active Workflow</div>
+          <div class="top-bar-value" id="activeWorkflow" data-testid="active-workflow">--</div>
+        </div>
+        <div class="top-bar-stat">
+          <div class="top-bar-label">Steps</div>
+          <div class="top-bar-value" id="stepCount" data-testid="step-count">0</div>
+        </div>
+        <div class="top-bar-stat">
+          <div class="top-bar-label">Executed</div>
+          <div class="top-bar-value" id="executedCount" data-testid="executed-count">0</div>
+        </div>
+      </div>
+      <div class="top-bar-end" id="engineStatus" data-testid="engine-status">READY</div>
+    </header>
+    
+    <aside class="workflow-panel">
+      <div class="panel-header">WORKFLOWS</div>
+      
+      <div id="workflowList" data-testid="workflow-list">
+        <div class="workflow-item" onclick="loadWorkflow('content_pipeline')" data-testid="workflow-content">
+          <div class="workflow-name">Content Pipeline</div>
+          <div class="workflow-desc">AI-powered content creation for creators</div>
+          <div class="workflow-meta">
+            <span>4 steps</span>
+            <span>v1.0.0</span>
+          </div>
+        </div>
+        
+        <div class="workflow-item" onclick="loadWorkflow('monetize_content')" data-testid="workflow-monetize">
+          <div class="workflow-name">Monetization Flow</div>
+          <div class="workflow-desc">License and monetize your content</div>
+          <div class="workflow-meta">
+            <span>5 steps</span>
+            <span>v1.0.0</span>
+          </div>
+        </div>
+        
+        <div class="workflow-item" onclick="loadWorkflow('verify_ownership')" data-testid="workflow-verify">
+          <div class="workflow-name">Ownership Verify</div>
+          <div class="workflow-desc">Cryptographic proof of content ownership</div>
+          <div class="workflow-meta">
+            <span>3 steps</span>
+            <span>v1.0.0</span>
+          </div>
+        </div>
+        
+        <div class="workflow-item" onclick="loadWorkflow('distribute')" data-testid="workflow-distribute">
+          <div class="workflow-name">P2P Distribute</div>
+          <div class="workflow-desc">Distribute content via IPFS/P2P</div>
+          <div class="workflow-meta">
+            <span>4 steps</span>
+            <span>v1.0.0</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="step-library">
+        <div class="panel-header">STEP TYPES</div>
+        <span class="step-type ai">AI Inference</span>
+        <span class="step-type ai">AI Classify</span>
+        <span class="step-type crypto">Crypto Sign</span>
+        <span class="step-type crypto">Hash</span>
+        <span class="step-type transform">Transform</span>
+        <span class="step-type transform">Filter</span>
+        <span class="step-type ipfs">IPFS Add</span>
+        <span class="step-type ipfs">IPFS Get</span>
+      </div>
+    </aside>
+    
+    <main class="main-canvas">
+      <div class="canvas-header">
+        <span class="canvas-title">Workflow DAG Visualization</span>
+        <div class="canvas-controls">
+          <button class="canvas-btn" onclick="showJsonEditor()" data-testid="edit-json-btn">Edit JSON</button>
+          <button class="canvas-btn orange" onclick="executeWorkflow()" data-testid="execute-btn">Execute</button>
+          <button class="canvas-btn" onclick="replayWorkflow()" data-testid="replay-btn">Replay</button>
+          <button class="canvas-btn red" onclick="clearWorkflow()" data-testid="clear-btn">Clear</button>
+        </div>
+      </div>
+      
+      <div class="dag-container" id="dagContainer" data-testid="dag-container">
+        <svg class="dag-svg" id="dagSvg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="var(--lcars-teal)" />
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </main>
+    
+    <aside class="right-panel">
+      <div class="config-section">
+        <div class="config-title">Execution Config</div>
+        <div class="config-row">
+          <label class="config-label">Max Parallel</label>
+          <input type="number" class="config-input" id="maxParallel" value="4" min="1" max="10">
+        </div>
+        <div class="config-row">
+          <label class="config-label">Timeout (ms)</label>
+          <input type="number" class="config-input" id="timeout" value="30000" min="1000">
+        </div>
+        <div class="config-row">
+          <label class="config-label">Rate Limit</label>
+          <input type="text" class="config-input" id="rateLimit" value="100/minute">
+        </div>
+      </div>
+      
+      <div class="config-section">
+        <div class="config-title">Current Step</div>
+        <div class="config-row">
+          <label class="config-label">ID</label>
+          <input type="text" class="config-input" id="stepId" readonly>
+        </div>
+        <div class="config-row">
+          <label class="config-label">Type</label>
+          <input type="text" class="config-input" id="stepType" readonly>
+        </div>
+        <div class="config-row">
+          <label class="config-label">Status</label>
+          <input type="text" class="config-input" id="stepStatus" readonly>
+        </div>
+      </div>
+      
+      <div class="config-section" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="config-title">Execution Receipts</div>
+        <div class="receipt-area" id="receiptArea" data-testid="receipt-area">
+          <div style="color: var(--lcars-purple); text-align: center; padding: 20px;">
+            No receipts yet. Execute a workflow to see receipts.
+          </div>
+        </div>
+      </div>
+    </aside>
+    
+    <footer class="bottom-bar">
+      <div class="bottom-stat">
+        <div class="bottom-dot active" id="statusDot"></div>
+        <span id="statusText" data-testid="status-text">Engine Ready</span>
+      </div>
+      <div class="bottom-stat">
+        <span>Merkle Root:</span>
+        <span id="merkleRoot" data-testid="merkle-root" style="color: var(--lcars-gold);">--</span>
+      </div>
+      <div class="bottom-stat">
+        <span>Protocol: JSONFlow/1.0</span>
+      </div>
+      <div class="bottom-stat" style="margin-left: auto;">
+        <span>Deterministic Execution Engine</span>
+      </div>
+    </footer>
+  </div>
+  
+  <!-- JSON Editor Modal -->
+  <div class="modal-overlay" id="jsonModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-title">Edit Workflow JSON</span>
+        <button class="modal-close" onclick="closeJsonEditor()">×</button>
+      </div>
+      <textarea class="json-editor" id="jsonEditor" data-testid="json-editor"></textarea>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="validateJson()">Validate</button>
+        <button class="modal-btn" onclick="applyJson()">Apply & Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // XHE JSONFLOW ORCHESTRATION ENGINE
+    // Deterministic, Content-Addressed Execution
+    // ============================================
+    
+    // Crypto utilities
+    const FlowCrypto = {
+      async hash(data) {
+        const encoded = new TextEncoder().encode(JSON.stringify(data));
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+        return Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      },
+      
+      async merkleRoot(items) {
+        if (items.length === 0) return await this.hash('empty');
+        if (items.length === 1) return await this.hash(items[0]);
+        
+        const hashes = await Promise.all(items.map(i => this.hash(i)));
+        
+        while (hashes.length > 1) {
+          const newHashes = [];
+          for (let i = 0; i < hashes.length; i += 2) {
+            const left = hashes[i];
+            const right = hashes[i + 1] || left;
+            newHashes.push(await this.hash(left + right));
+          }
+          hashes.length = 0;
+          hashes.push(...newHashes);
+        }
+        
+        return hashes[0];
+      }
+    };
+    
+    // Mock Adapters for demonstration
+    const Adapters = {
+      async ai_infer(params) {
+        // Simulated AI inference
+        await this.delay(500 + Math.random() * 500);
+        return {
+          result: `AI processed: ${params.prompt?.substring(0, 30) || 'input'}...`,
+          confidence: 0.85 + Math.random() * 0.15,
+          model: params.model || 'local-llm'
+        };
+      },
+      
+      async ai_classify(params) {
+        await this.delay(300);
+        const categories = params.categories || ['positive', 'negative', 'neutral'];
+        return {
+          category: categories[Math.floor(Math.random() * categories.length)],
+          confidence: 0.7 + Math.random() * 0.3
+        };
+      },
+      
+      async crypto_sign(params) {
+        await this.delay(100);
+        const signature = await FlowCrypto.hash(params.data + Date.now());
+        return { signature, algorithm: 'ECDSA-P256' };
+      },
+      
+      async crypto_hash(params) {
+        return { hash: await FlowCrypto.hash(params.data) };
+      },
+      
+      async transform_map(params) {
+        await this.delay(50);
+        const data = params.data || [];
+        return { result: data.map(params.fn || (x => x)) };
+      },
+      
+      async transform_filter(params) {
+        await this.delay(50);
+        const data = params.data || [];
+        return { result: data.filter(params.predicate || (() => true)) };
+      },
+      
+      async ipfs_add(params) {
+        await this.delay(200);
+        const cid = 'Qm' + (await FlowCrypto.hash(params.content)).substring(0, 44);
+        return { cid, size: JSON.stringify(params.content).length };
+      },
+      
+      async ipfs_get(params) {
+        await this.delay(150);
+        return { content: `[Retrieved content from ${params.cid}]` };
+      },
+      
+      async mock_compute(params) {
+        await this.delay(100);
+        return { output: `Computed: ${JSON.stringify(params.input || {}).substring(0, 50)}` };
+      },
+      
+      delay(ms) {
+        return new Promise(r => setTimeout(r, ms));
+      }
+    };
+    
+    // JSONFlow Engine
+    class JSONFlowEngine {
+      constructor() {
+        this.workflow = null;
+        this.receipts = [];
+        this.stepResults = {};
+        this.executing = false;
+      }
+      
+      async loadWorkflow(workflow) {
+        this.workflow = workflow;
+        this.receipts = [];
+        this.stepResults = {};
+        return this.validate();
+      }
+      
+      validate() {
+        if (!this.workflow) return { valid: false, error: 'No workflow loaded' };
+        if (!this.workflow.steps || !Array.isArray(this.workflow.steps)) {
+          return { valid: false, error: 'Workflow must have steps array' };
+        }
+        
+        const stepIds = new Set();
+        for (const step of this.workflow.steps) {
+          if (!step.id) return { valid: false, error: 'All steps must have id' };
+          if (stepIds.has(step.id)) return { valid: false, error: `Duplicate step id: ${step.id}` };
+          stepIds.add(step.id);
+        }
+        
+        return { valid: true };
+      }
+      
+      buildDAG() {
+        if (!this.workflow) return { nodes: [], edges: [] };
+        
+        const nodes = this.workflow.steps.map((step, i) => ({
+          id: step.id,
+          type: step.type,
+          params: step.params,
+          x: 100 + (i % 3) * 200,
+          y: 80 + Math.floor(i / 3) * 120
+        }));
+        
+        const edges = [];
+        this.workflow.steps.forEach(step => {
+          if (step.parent_step_ids) {
+            step.parent_step_ids.forEach(parentId => {
+              edges.push({ from: parentId, to: step.id });
+            });
+          }
+        });
+        
+        return { nodes, edges };
+      }
+      
+      resolveReferences(params) {
+        if (!params) return params;
+        
+        const resolved = {};
+        for (const [key, value] of Object.entries(params)) {
+          if (typeof value === 'string' && value.startsWith('$')) {
+            // Reference to previous step output
+            const match = value.match(/^\$(\w+)\.?(.*)$/);
+            if (match) {
+              const [, stepId, path] = match;
+              let result = this.stepResults[stepId];
+              if (path && result) {
+                for (const p of path.split('.')) {
+                  result = result?.[p];
+                }
+              }
+              resolved[key] = result;
+            }
+          } else {
+            resolved[key] = value;
+          }
+        }
+        return resolved;
+      }
+      
+      async executeStep(step) {
+        const startTime = Date.now();
+        
+        // Resolve parameter references
+        const params = this.resolveReferences(step.params);
+        
+        // Get adapter
+        const adapterFn = Adapters[step.type];
+        if (!adapterFn) {
+          throw new Error(`Unknown step type: ${step.type}`);
+        }
+        
+        // Execute
+        const output = await adapterFn.call(Adapters, params);
+        
+        // Create receipt
+        const receipt = {
+          step_id: step.id,
+          type: step.type,
+          status: 'success',
+          input_hash: await FlowCrypto.hash(params),
+          output_hash: await FlowCrypto.hash(output),
+          output,
+          execution_metadata: {
+            latency_ms: Date.now() - startTime,
+            timestamp: new Date().toISOString()
+          }
+        };
+        
+        receipt.merkle_proof = await FlowCrypto.hash(receipt);
+        
+        return receipt;
+      }
+      
+      async execute() {
+        if (!this.workflow || this.executing) return;
+        
+        this.executing = true;
+        this.receipts = [];
+        this.stepResults = {};
+        
+        const validation = this.validate();
+        if (!validation.valid) {
+          this.executing = false;
+          throw new Error(validation.error);
+        }
+        
+        // Build execution order (topological sort)
+        const executed = new Set();
+        const steps = [...this.workflow.steps];
+        
+        while (executed.size < steps.length) {
+          const ready = steps.filter(s => 
+            !executed.has(s.id) &&
+            (!s.parent_step_ids || s.parent_step_ids.every(p => executed.has(p)))
+          );
+          
+          if (ready.length === 0) {
+            throw new Error('Cycle detected in workflow DAG');
+          }
+          
+          // Execute ready steps (could be parallel)
+          for (const step of ready) {
+            updateStepStatus(step.id, 'running');
+            
+            try {
+              const receipt = await this.executeStep(step);
+              this.receipts.push(receipt);
+              this.stepResults[step.id] = receipt.output;
+              executed.add(step.id);
+              
+              updateStepStatus(step.id, 'success');
+              addReceipt(receipt);
+            } catch (e) {
+              const errorReceipt = {
+                step_id: step.id,
+                status: 'error',
+                error: e.message,
+                timestamp: new Date().toISOString()
+              };
+              this.receipts.push(errorReceipt);
+              updateStepStatus(step.id, 'error');
+              addReceipt(errorReceipt);
+              throw e;
+            }
+          }
+        }
+        
+        // Compute final merkle root
+        const merkleRoot = await FlowCrypto.merkleRoot(this.receipts);
+        
+        this.executing = false;
+        
+        return {
+          workflow_id: this.workflow.workflow,
+          receipts: this.receipts,
+          merkle_root: merkleRoot
+        };
+      }
+    }
+    
+    // Predefined workflows
+    const WORKFLOWS = {
+      content_pipeline: {
+        workflow: 'content_pipeline',
+        version: '1.0.0',
+        description: 'AI-powered content creation for creators',
+        steps: [
+          { id: 'analyze', type: 'ai_classify', params: { text: 'User content input', categories: ['blog', 'video', 'audio', 'image'] } },
+          { id: 'generate', type: 'ai_infer', params: { prompt: 'Generate content based on $analyze.category', model: 'local-llm' }, parent_step_ids: ['analyze'] },
+          { id: 'sign', type: 'crypto_sign', params: { data: '$generate.result' }, parent_step_ids: ['generate'] },
+          { id: 'store', type: 'ipfs_add', params: { content: { data: '$generate.result', signature: '$sign.signature' } }, parent_step_ids: ['sign'] }
+        ]
+      },
+      monetize_content: {
+        workflow: 'monetize_content',
+        version: '1.0.0',
+        description: 'License and monetize your content',
+        steps: [
+          { id: 'hash_content', type: 'crypto_hash', params: { data: 'content_to_monetize' } },
+          { id: 'create_license', type: 'ai_infer', params: { prompt: 'Generate license terms for content', model: 'local-llm' }, parent_step_ids: ['hash_content'] },
+          { id: 'sign_license', type: 'crypto_sign', params: { data: '$create_license.result' }, parent_step_ids: ['create_license'] },
+          { id: 'publish_license', type: 'ipfs_add', params: { content: { hash: '$hash_content.hash', license: '$create_license.result', sig: '$sign_license.signature' } }, parent_step_ids: ['sign_license'] },
+          { id: 'compute_royalty', type: 'mock_compute', params: { input: { cid: '$publish_license.cid', rate: 0.1 } }, parent_step_ids: ['publish_license'] }
+        ]
+      },
+      verify_ownership: {
+        workflow: 'verify_ownership',
+        version: '1.0.0',
+        description: 'Cryptographic proof of content ownership',
+        steps: [
+          { id: 'hash', type: 'crypto_hash', params: { data: 'content_to_verify' } },
+          { id: 'sign', type: 'crypto_sign', params: { data: '$hash.hash' }, parent_step_ids: ['hash'] },
+          { id: 'store_proof', type: 'ipfs_add', params: { content: { contentHash: '$hash.hash', ownerSig: '$sign.signature', timestamp: Date.now() } }, parent_step_ids: ['sign'] }
+        ]
+      },
+      distribute: {
+        workflow: 'distribute',
+        version: '1.0.0',
+        description: 'Distribute content via IPFS/P2P',
+        steps: [
+          { id: 'prepare', type: 'mock_compute', params: { input: 'content_bundle' } },
+          { id: 'hash', type: 'crypto_hash', params: { data: '$prepare.output' }, parent_step_ids: ['prepare'] },
+          { id: 'upload', type: 'ipfs_add', params: { content: '$prepare.output' }, parent_step_ids: ['hash'] },
+          { id: 'announce', type: 'mock_compute', params: { input: { cid: '$upload.cid', hash: '$hash.hash' } }, parent_step_ids: ['upload'] }
+        ]
+      }
+    };
+    
+    // Global engine instance
+    let engine = new JSONFlowEngine();
+    let currentWorkflowId = null;
+    
+    // UI Functions
+    function updateStats() {
+      document.getElementById('activeWorkflow').textContent = currentWorkflowId || '--';
+      document.getElementById('stepCount').textContent = engine.workflow?.steps?.length || 0;
+      document.getElementById('executedCount').textContent = engine.receipts.length;
+    }
+    
+    function renderDAG() {
+      const svg = document.getElementById('dagSvg');
+      const { nodes, edges } = engine.buildDAG();
+      
+      // Clear existing
+      svg.innerHTML = `
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="var(--lcars-teal)" />
+          </marker>
+        </defs>
+      `;
+      
+      if (nodes.length === 0) {
+        svg.innerHTML += `
+          <text x="50%" y="50%" text-anchor="middle" fill="var(--lcars-purple)" font-size="14">
+            No workflow loaded. Select a workflow from the left panel.
+          </text>
+        `;
+        return;
+      }
+      
+      // Create node positions map
+      const nodeMap = {};
+      nodes.forEach(n => { nodeMap[n.id] = n; });
+      
+      // Draw edges first
+      edges.forEach(edge => {
+        const from = nodeMap[edge.from];
+        const to = nodeMap[edge.to];
+        if (from && to) {
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('class', 'dag-edge');
+          path.setAttribute('d', `M${from.x + 75} ${from.y + 40} L${to.x + 75} ${to.y}`);
+          svg.appendChild(path);
+        }
+      });
+      
+      // Draw nodes
+      nodes.forEach(node => {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'dag-node');
+        g.setAttribute('id', `node-${node.id}`);
+        g.onclick = () => selectStep(node);
+        
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('class', 'dag-node-rect');
+        rect.setAttribute('x', node.x);
+        rect.setAttribute('y', node.y);
+        rect.setAttribute('width', 150);
+        rect.setAttribute('height', 70);
+        
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('class', 'dag-node-text');
+        text.setAttribute('x', node.x + 75);
+        text.setAttribute('y', node.y + 30);
+        text.setAttribute('text-anchor', 'middle');
+        text.textContent = node.id;
+        
+        const type = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        type.setAttribute('class', 'dag-node-type');
+        type.setAttribute('x', node.x + 75);
+        type.setAttribute('y', node.y + 50);
+        type.setAttribute('text-anchor', 'middle');
+        type.textContent = node.type;
+        
+        g.appendChild(rect);
+        g.appendChild(text);
+        g.appendChild(type);
+        svg.appendChild(g);
+      });
+    }
+    
+    function updateStepStatus(stepId, status) {
+      const node = document.getElementById(`node-${stepId}`);
+      if (node) {
+        node.classList.remove('running', 'success', 'error');
+        node.classList.add(status);
+      }
+      
+      document.getElementById('stepId').value = stepId;
+      document.getElementById('stepStatus').value = status.toUpperCase();
+      
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      
+      if (status === 'running') {
+        statusDot.style.background = 'var(--lcars-gold)';
+        statusText.textContent = `Executing: ${stepId}`;
+      } else if (status === 'success') {
+        statusDot.style.background = 'var(--lcars-green)';
+        statusText.textContent = `Completed: ${stepId}`;
+      } else if (status === 'error') {
+        statusDot.style.background = 'var(--lcars-red)';
+        statusText.textContent = `Error: ${stepId}`;
+      }
+    }
+    
+    function selectStep(node) {
+      document.getElementById('stepId').value = node.id;
+      document.getElementById('stepType').value = node.type;
+      
+      const receipt = engine.receipts.find(r => r.step_id === node.id);
+      document.getElementById('stepStatus').value = receipt?.status?.toUpperCase() || 'PENDING';
+    }
+    
+    function addReceipt(receipt) {
+      const area = document.getElementById('receiptArea');
+      
+      // Clear placeholder if first receipt
+      if (engine.receipts.length === 1) {
+        area.innerHTML = '';
+      }
+      
+      const item = document.createElement('div');
+      item.className = 'receipt-item';
+      item.innerHTML = `
+        <div class="receipt-header">
+          <span class="receipt-step">${receipt.step_id}</span>
+          <span class="receipt-status ${receipt.status}">${receipt.status.toUpperCase()}</span>
+        </div>
+        <div class="receipt-hash">${receipt.merkle_proof?.substring(0, 32) || receipt.error || '--'}...</div>
+      `;
+      area.appendChild(item);
+      area.scrollTop = area.scrollHeight;
+      
+      updateStats();
+    }
+    
+    // Control Functions
+    async function loadWorkflow(id) {
+      const workflow = WORKFLOWS[id];
+      if (!workflow) return;
+      
+      currentWorkflowId = id;
+      await engine.loadWorkflow(workflow);
+      
+      // Update UI
+      document.querySelectorAll('.workflow-item').forEach(el => el.classList.remove('selected'));
+      document.querySelector(`[data-testid="workflow-${id.split('_')[0]}"]`)?.classList.add('selected');
+      
+      document.getElementById('receiptArea').innerHTML = `
+        <div style="color: var(--lcars-purple); text-align: center; padding: 20px;">
+          Workflow loaded. Click Execute to run.
+        </div>
+      `;
+      
+      updateStats();
+      renderDAG();
+      
+      document.getElementById('engineStatus').textContent = 'LOADED';
+      document.getElementById('statusText').textContent = `Loaded: ${id}`;
+    }
+    
+    async function executeWorkflow() {
+      if (!engine.workflow) {
+        alert('Load a workflow first');
+        return;
+      }
+      
+      document.getElementById('engineStatus').textContent = 'EXECUTING';
+      
+      try {
+        const result = await engine.execute();
+        
+        document.getElementById('merkleRoot').textContent = result.merkle_root.substring(0, 16) + '...';
+        document.getElementById('engineStatus').textContent = 'COMPLETE';
+        document.getElementById('statusText').textContent = 'Execution complete';
+        document.getElementById('statusDot').style.background = 'var(--lcars-teal)';
+        
+      } catch (e) {
+        document.getElementById('engineStatus').textContent = 'ERROR';
+        console.error(e);
+      }
+      
+      updateStats();
+    }
+    
+    function replayWorkflow() {
+      if (engine.receipts.length === 0) {
+        alert('No execution to replay');
+        return;
+      }
+      
+      // Reset visual state
+      document.querySelectorAll('.dag-node').forEach(n => {
+        n.classList.remove('running', 'success', 'error');
+      });
+      
+      // Replay animations
+      let delay = 0;
+      engine.receipts.forEach(receipt => {
+        setTimeout(() => {
+          updateStepStatus(receipt.step_id, receipt.status);
+        }, delay);
+        delay += 500;
+      });
+    }
+    
+    function clearWorkflow() {
+      engine = new JSONFlowEngine();
+      currentWorkflowId = null;
+      
+      document.getElementById('receiptArea').innerHTML = `
+        <div style="color: var(--lcars-purple); text-align: center; padding: 20px;">
+          No receipts yet. Execute a workflow to see receipts.
+        </div>
+      `;
+      
+      document.getElementById('merkleRoot').textContent = '--';
+      document.getElementById('engineStatus').textContent = 'READY';
+      document.getElementById('statusText').textContent = 'Engine Ready';
+      document.getElementById('statusDot').style.background = 'var(--lcars-teal)';
+      
+      document.querySelectorAll('.workflow-item').forEach(el => el.classList.remove('selected'));
+      
+      updateStats();
+      renderDAG();
+    }
+    
+    function showJsonEditor() {
+      const workflow = engine.workflow || {
+        workflow: 'custom_workflow',
+        version: '1.0.0',
+        steps: []
+      };
+      
+      document.getElementById('jsonEditor').value = JSON.stringify(workflow, null, 2);
+      document.getElementById('jsonModal').classList.add('active');
+    }
+    
+    function closeJsonEditor() {
+      document.getElementById('jsonModal').classList.remove('active');
+    }
+    
+    function validateJson() {
+      try {
+        const json = JSON.parse(document.getElementById('jsonEditor').value);
+        engine.loadWorkflow(json);
+        const result = engine.validate();
+        
+        if (result.valid) {
+          alert('Valid workflow JSON!');
+        } else {
+          alert('Invalid: ' + result.error);
+        }
+      } catch (e) {
+        alert('JSON parse error: ' + e.message);
+      }
+    }
+    
+    async function applyJson() {
+      try {
+        const json = JSON.parse(document.getElementById('jsonEditor').value);
+        await engine.loadWorkflow(json);
+        currentWorkflowId = json.workflow || 'custom';
+        
+        closeJsonEditor();
+        updateStats();
+        renderDAG();
+        
+        document.getElementById('engineStatus').textContent = 'LOADED';
+        
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+    
+    // Initialize
+    window.addEventListener('load', () => {
+      renderDAG();
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeJsonEditor();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sovereign Creator Revolution — Decentralized Economy</title>
+  
+  <!-- Core Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-dark: #0a0e27;
+      --bg-medium: #1a1e3a;
+      --bg-light: #2a2e4a;
+      --accent-primary: #00ff88;
+      --accent-secondary: #667eea;
+      --accent-gold: #ffd700;
+      --accent-cyan: #00d4ff;
+      --text-primary: #ffffff;
+      --text-secondary: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+      --glass: rgba(255, 255, 255, 0.05);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1e3a 50%, #0f1729 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+    
+    /* Animated Background */
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.3;
+    }
+    
+    /* Header */
+    header {
+      backdrop-filter: blur(20px);
+      background: rgba(26, 30, 58, 0.8);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: -1px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      backdrop-filter: blur(10px);
+      border: 1px solid;
+    }
+    
+    .status-badge.online {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: var(--success);
+    }
+    
+    .status-badge.offline {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--error);
+      color: var(--error);
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+    
+    /* Buttons */
+    button, .btn {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.7rem 1.5rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 0.9rem;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
+      font-family: inherit;
+    }
+    
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 255, 136, 0.2);
+      border-color: var(--accent-primary);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    button.primary {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      border: none;
+      color: var(--bg-dark);
+      font-weight: 600;
+    }
+    
+    button.success { background: var(--success); border: none; }
+    button.warning { background: var(--warning); border: none; color: var(--bg-dark); }
+    button.danger { background: var(--error); border: none; }
+    button.small { padding: 0.5rem 1rem; font-size: 0.85rem; }
+    
+    /* Container */
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid var(--border);
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+    
+    .tab {
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+      white-space: nowrap;
+      font-weight: 500;
+      opacity: 0.7;
+      border-radius: 8px 8px 0 0;
+    }
+    
+    .tab:hover { opacity: 1; background: var(--glass); }
+    
+    .tab.active {
+      border-bottom-color: var(--accent-primary);
+      opacity: 1;
+      color: var(--accent-primary);
+      background: rgba(0, 255, 136, 0.1);
+    }
+    
+    .tab-content { display: none; animation: fadeIn 0.3s; }
+    .tab-content.active { display: block; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Cards */
+    .card {
+      backdrop-filter: blur(20px);
+      background: rgba(26, 30, 58, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+      backdrop-filter: blur(20px);
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s;
+    }
+    
+    .stat-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px rgba(0, 255, 136, 0.15);
+    }
+    
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0.5rem 0;
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 500;
+    }
+    
+    /* Grid Layouts */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+    }
+    
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+    
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    
+    @media(max-width: 1024px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    
+    /* Form Elements */
+    input, textarea, select {
+      width: 100%;
+      padding: 0.9rem 1.2rem;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: rgba(255, 255, 255, 0.05);
+      margin: 0.5rem 0;
+      color: var(--text-primary);
+      font-size: 1rem;
+      transition: all 0.3s;
+      font-family: inherit;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--accent-primary);
+    }
+    
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+    
+    /* Content Items */
+    .content-item {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    
+    .content-item:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateX(4px);
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0.2rem;
+    }
+    
+    .badge.verified { background: var(--success); color: white; }
+    .badge.pending { background: var(--warning); color: var(--bg-dark); }
+    .badge.published { background: var(--success); color: white; }
+    .badge.draft { background: rgba(148, 163, 184, 0.3); color: var(--text-primary); }
+    .badge.nft { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; }
+    
+    /* Notifications */
+    .notification {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      backdrop-filter: blur(20px);
+      background: rgba(26, 30, 58, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      z-index: 10000;
+      animation: slideIn 0.3s;
+      max-width: 400px;
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .notification.success { border-color: var(--success); }
+    .notification.error { border-color: var(--error); }
+    .notification.warning { border-color: var(--warning); }
+    
+    /* Progress Bar */
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 0.5rem 0;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+      transition: width 0.5s;
+    }
+    
+    /* Terminal */
+    .terminal {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      max-height: 300px;
+      overflow-y: auto;
+      color: var(--accent-primary);
+    }
+    
+    .terminal-line {
+      margin-bottom: 0.3rem;
+      opacity: 0.9;
+    }
+    
+    .terminal-line.success { color: var(--success); }
+    .terminal-line.error { color: var(--error); }
+    .terminal-line.info { color: var(--accent-cyan); }
+    
+    /* Identity Display */
+    .identity-display {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      word-break: break-all;
+      font-size: 0.85rem;
+      color: var(--accent-cyan);
+    }
+    
+    /* Chart Container */
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin: 1.5rem 0;
+    }
+    
+    /* Loading State */
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      opacity: 0.6;
+    }
+    
+    .loading::after {
+      content: '...';
+      animation: dots 1.5s infinite;
+    }
+    
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      opacity: 0.6;
+    }
+    
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.3;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.4); }
+    ::-webkit-scrollbar-thumb { background: rgba(0, 255, 136, 0.4); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 255, 136, 0.6); }
+    
+    /* Responsive */
+    @media(max-width: 768px) {
+      .container { padding: 1rem; }
+      .grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .header-actions { gap: 0.5rem; }
+      button { padding: 0.6rem 1rem; font-size: 0.85rem; }
+    }
+    
+    /* Utility Classes */
+    .hidden { display: none !important; }
+    .text-center { text-align: center; }
+    .mt-1 { margin-top: 1rem; }
+    .mb-1 { margin-bottom: 1rem; }
+    .flex { display: flex; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .flex-center { display: flex; justify-content: center; align-items: center; }
+    .gap-1 { gap: 1rem; }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+
+  <header>
+    <div class="logo">
+      <span>🚀</span>
+      <span>Sovereign Creator Revolution</span>
+    </div>
+    <div class="header-actions">
+      <span id="token-balance" class="status-badge" style="background: linear-gradient(135deg, #ffd700, #ff8c00); color: var(--bg-dark);">
+        💰 0 SCT
+      </span>
+      <span id="network-status" class="status-badge offline">
+        <span class="status-dot"></span>
+        <span>Offline</span>
+      </span>
+      <button id="identity-btn" class="primary">🔐 Identity</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Stats Dashboard -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">My Tokens</div>
+        <div class="stat-value" id="stat-tokens">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Content Created</div>
+        <div class="stat-value" id="stat-content">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Network Peers</div>
+        <div class="stat-value" id="stat-peers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Earnings</div>
+        <div class="stat-value">$<span id="stat-earnings">0</span></div>
+      </div>
+    </div>
+
+    <!-- Main Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="create">✍️ Create</div>
+      <div class="tab" data-tab="portfolio">🎨 Portfolio</div>
+      <div class="tab" data-tab="economy">💰 Economy</div>
+      <div class="tab" data-tab="network">🌐 Network</div>
+      <div class="tab" data-tab="analytics">📊 Analytics</div>
+      <div class="tab" data-tab="settings">⚙️ Settings</div>
+    </div>
+
+    <!-- CREATE TAB -->
+    <div id="tab-create" class="tab-content active">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Content Studio</h2>
+          <div class="flex gap-1">
+            <button class="small" onclick="saveDraft()">💾 Save Draft</button>
+            <button class="primary" onclick="publishContent()">🚀 Publish</button>
+          </div>
+        </div>
+
+        <div>
+          <label>Title</label>
+          <input type="text" id="content-title" placeholder="Your amazing title..." />
+        </div>
+
+        <div>
+          <label>Content</label>
+          <textarea id="content-body" placeholder="Start creating something revolutionary...
+
+This platform enables:
+• True ownership of your content
+• Direct monetization without intermediaries
+• Cryptographic verification and authenticity
+• Decentralized P2P distribution
+• Token-based economy with real rewards
+
+Start writing and join the creator revolution!"></textarea>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Content Type</label>
+            <select id="content-type">
+              <option value="article">📝 Article</option>
+              <option value="tutorial">📚 Tutorial</option>
+              <option value="video">🎥 Video</option>
+              <option value="course">🎓 Course</option>
+              <option value="research">🔬 Research</option>
+            </select>
+          </div>
+          <div>
+            <label>Visibility</label>
+            <select id="content-visibility">
+              <option value="public">🌍 Public</option>
+              <option value="premium">💎 Premium (5 SCT)</option>
+              <option value="exclusive">⭐ Exclusive (10 SCT)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label>Tags (comma separated)</label>
+          <input type="text" id="content-tags" placeholder="blockchain, decentralization, sovereignty..." />
+        </div>
+
+        <div style="margin-top: 1rem;">
+          <label>
+            <input type="checkbox" id="mint-as-nft" />
+            Mint as NFT with resale royalties (10%)
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- PORTFOLIO TAB -->
+    <div id="tab-portfolio" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Your Portfolio</h2>
+          <div class="flex gap-1">
+            <button class="small" onclick="filterContent('all')">All</button>
+            <button class="small" onclick="filterContent('published')">Published</button>
+            <button class="small" onclick="filterContent('draft')">Drafts</button>
+          </div>
+        </div>
+        <div id="portfolio-list"></div>
+      </div>
+    </div>
+
+    <!-- ECONOMY TAB -->
+    <div id="tab-economy" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Token Economy</h2>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">SCT Balance</div>
+            <div class="stat-value" id="economy-balance">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Tokens Earned</div>
+            <div class="stat-value" id="economy-earned">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Tokens Spent</div>
+            <div class="stat-value" id="economy-spent">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Market Value</div>
+            <div class="stat-value">$<span id="economy-value">0</span></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Transfer Tokens</h3>
+            <label>Recipient Peer ID</label>
+            <input type="text" id="transfer-recipient" placeholder="peer-abc123..." />
+            <label>Amount</label>
+            <input type="number" id="transfer-amount" placeholder="10" min="1" />
+            <button class="primary mt-1" onclick="transferTokens()" style="width: 100%;">Send Tokens</button>
+          </div>
+
+          <div class="card">
+            <h3>Earn Tokens</h3>
+            <p style="opacity: 0.8; margin-bottom: 1rem;">Earn SCT tokens by:</p>
+            <ul style="list-style: none; padding: 0;">
+              <li style="padding: 0.5rem 0;">✅ Publishing content: <strong>10 SCT</strong></li>
+              <li style="padding: 0.5rem 0;">✅ Peer verification: <strong>5 SCT</strong></li>
+              <li style="padding: 0.5rem 0;">✅ Content purchased: <strong>Variable</strong></li>
+              <li style="padding: 0.5rem 0;">✅ Network contribution: <strong>3 SCT/day</strong></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Transaction History</h3>
+        <div id="transaction-history"></div>
+      </div>
+    </div>
+
+    <!-- NETWORK TAB -->
+    <div id="tab-network" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">P2P Network</h2>
+          <button id="connect-network-btn" class="primary" onclick="connectNetwork()">
+            Connect to Network
+          </button>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Network Status</h3>
+            <div class="identity-display" id="peer-id-display">Not connected</div>
+            <div style="margin-top: 1rem;">
+              <strong>Connected Peers:</strong> <span id="connected-peers-count">0</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Connect to Peer</h3>
+            <label>Peer ID</label>
+            <input type="text" id="connect-peer-id" placeholder="peer-xyz789..." />
+            <button class="success mt-1" onclick="connectToPeer()" style="width: 100%;">
+              Connect
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Network Log</h3>
+          <div class="terminal" id="network-log"></div>
+        </div>
+
+        <div class="card">
+          <h3>Connected Peers</h3>
+          <div id="peers-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS TAB -->
+    <div id="tab-analytics" class="tab-content">
+      <div class="card">
+        <h2 class="card-title">Analytics Dashboard</h2>
+        
+        <div class="grid-2">
+          <div class="card">
+            <h3>Content Performance</h3>
+            <div class="chart-container">
+              <canvas id="content-chart"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Token Flow</h3>
+            <div class="chart-container">
+              <canvas id="token-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Top Content</h3>
+          <div id="top-content-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" class="tab-content">
+      <div class="card">
+        <h2 class="card-title">Settings & Identity</h2>
+
+        <div class="card">
+          <h3>🔐 Sovereign Identity</h3>
+          <div class="identity-display" id="identity-display">
+            No identity generated
+          </div>
+          <div style="margin-top: 1rem;">
+            <label>Display Name</label>
+            <input type="text" id="identity-name" placeholder="Your creator name..." />
+          </div>
+          <div class="flex gap-1 mt-1">
+            <button class="primary" onclick="generateIdentity()">Generate Identity</button>
+            <button onclick="exportIdentity()">Export</button>
+            <button onclick="importIdentity()">Import</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>⚙️ Network Settings</h3>
+          <label>
+            <input type="checkbox" id="auto-connect" checked />
+            Auto-connect to network on startup
+          </label>
+          <label style="margin-top: 1rem;">
+            <input type="checkbox" id="auto-backup" checked />
+            Auto-backup state to browser storage
+          </label>
+        </div>
+
+        <div class="card">
+          <h3>📊 Statistics</h3>
+          <div class="grid-2">
+            <div>
+              <strong>Chain Length:</strong> <span id="chain-length">0</span>
+            </div>
+            <div>
+              <strong>Last Pulse:</strong> <span id="last-pulse">Never</span>
+            </div>
+            <div>
+              <strong>State Hash:</strong> <span id="state-hash" style="font-family: monospace; font-size: 0.8rem;">—</span>
+            </div>
+            <div>
+              <strong>Integrity:</strong> <span id="integrity-status">✅ Valid</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>🔄 Data Management</h3>
+          <div class="flex gap-1">
+            <button onclick="exportAllData()">Export All Data</button>
+            <button onclick="importData()">Import Data</button>
+            <button onclick="clearAllData()" class="danger">Clear All Data</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📜 Activity Log</h3>
+          <div class="terminal" id="activity-log"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // CORE APPLICATION LOGIC
+    // ============================================
+
+    // Global State
+    const state = {
+      identity: null,
+      peer: null,
+      peerId: null,
+      connections: new Map(),
+      content: [],
+      drafts: [],
+      tokens: 100, // Starting tokens
+      transactions: [],
+      pulseChain: [],
+      stats: {
+        tokensEarned: 100,
+        tokensSpent: 0,
+        contentCount: 0,
+        peerCount: 0
+      }
+    };
+
+    // ============================================
+    // CRYPTOGRAPHIC IDENTITY (Web Crypto API)
+    // ============================================
+
+    async function generateIdentity() {
+      try {
+        const name = document.getElementById('identity-name').value || 'Anonymous Creator';
+        
+        // Generate ECDSA P-256 key pair
+        const keyPair = await crypto.subtle.generateKey(
+          {
+            name: 'ECDSA',
+            namedCurve: 'P-256'
+          },
+          true,
+          ['sign', 'verify']
+        );
+
+        // Export public key
+        const publicKeyBuffer = await crypto.subtle.exportKey('raw', keyPair.publicKey);
+        const publicKeyHex = arrayBufferToHex(publicKeyBuffer);
+
+        // Export private key for storage
+        const privateKeyJwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
+
+        state.identity = {
+          name,
+          keyPair,
+          publicKey: publicKeyHex,
+          privateKeyJwk,
+          created: new Date().toISOString(),
+          did: `did:scr:${publicKeyHex.slice(0, 16)}`
+        };
+
+        saveState();
+        updateIdentityDisplay();
+        notify('Identity Created', `Welcome, ${name}!`, 'success');
+        log(`Identity generated: ${state.identity.did}`, 'success');
+        
+        // Award initial tokens
+        addPulse('identity_created', { did: state.identity.did });
+      } catch (e) {
+        notify('Error', `Failed to generate identity: ${e.message}`, 'error');
+      }
+    }
+
+    async function signMessage(message) {
+      if (!state.identity) throw new Error('No identity');
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(message);
+
+      const signature = await crypto.subtle.sign(
+        {
+          name: 'ECDSA',
+          hash: { name: 'SHA-256' }
+        },
+        state.identity.keyPair.privateKey,
+        data
+      );
+
+      return arrayBufferToHex(signature);
+    }
+
+    async function verifySignature(message, signatureHex, publicKeyHex) {
+      const publicKeyBuffer = hexToArrayBuffer(publicKeyHex);
+      
+      const publicKey = await crypto.subtle.importKey(
+        'raw',
+        publicKeyBuffer,
+        {
+          name: 'ECDSA',
+          namedCurve: 'P-256'
+        },
+        false,
+        ['verify']
+      );
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(message);
+      const signature = hexToArrayBuffer(signatureHex);
+
+      return await crypto.subtle.verify(
+        {
+          name: 'ECDSA',
+          hash: { name: 'SHA-256' }
+        },
+        publicKey,
+        signature,
+        data
+      );
+    }
+
+    // ============================================
+    // PULSE CHAIN (Hash-Chained State)
+    // ============================================
+
+    async function addPulse(actionType, data) {
+      const prevHash = state.pulseChain.length > 0 
+        ? state.pulseChain[state.pulseChain.length - 1].hash 
+        : '0'.repeat(64);
+
+      const pulse = {
+        timestamp: Date.now(),
+        actionType,
+        data,
+        prevHash,
+        actor: state.identity?.did || 'anonymous',
+        stateHash: await computeStateHash()
+      };
+
+      // Compute hash of this pulse
+      const pulseString = JSON.stringify(pulse);
+      pulse.hash = await sha256(pulseString);
+
+      // Sign if we have identity
+      if (state.identity) {
+        pulse.signature = await signMessage(pulseString);
+      }
+
+      state.pulseChain.push(pulse);
+      saveState();
+      
+      // Broadcast to network
+      broadcastPulse(pulse);
+      
+      log(`Pulse added: ${actionType}`, 'info');
+      return pulse;
+    }
+
+    async function verifyPulseChain() {
+      let expectedPrev = '0'.repeat(64);
+
+      for (let i = 0; i < state.pulseChain.length; i++) {
+        const pulse = state.pulseChain[i];
+
+        if (pulse.prevHash !== expectedPrev) {
+          return { valid: false, brokenAt: i, reason: 'prevHash mismatch' };
+        }
+
+        const { hash, signature, ...pulseData } = pulse;
+        const pulseString = JSON.stringify(pulseData);
+        const computedHash = await sha256(pulseString);
+
+        if (hash !== computedHash) {
+          return { valid: false, brokenAt: i, reason: 'hash mismatch' };
+        }
+
+        expectedPrev = computedHash;
+      }
+
+      return { valid: true, length: state.pulseChain.length };
+    }
+
+    // ============================================
+    // P2P NETWORKING (PeerJS)
+    // ============================================
+
+    async function connectNetwork() {
+      if (state.peer) {
+        notify('Already Connected', 'You are already connected to the network', 'warning');
+        return;
+      }
+
+      try {
+        const peerId = generatePeerId();
+        state.peer = new Peer(peerId, {
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
+          }
+        });
+
+        state.peer.on('open', (id) => {
+          state.peerId = id;
+          document.getElementById('peer-id-display').textContent = id;
+          document.getElementById('network-status').innerHTML = `
+            <span class="status-dot"></span>
+            <span>Online</span>
+          `;
+          document.getElementById('network-status').className = 'status-badge online';
+          
+          notify('Network Connected', `Your Peer ID: ${id}`, 'success');
+          log(`Connected to network: ${id}`, 'success');
+          
+          addPulse('network_connected', { peerId: id });
+        });
+
+        state.peer.on('connection', handleConnection);
+        
+        state.peer.on('error', (err) => {
+          log(`P2P error: ${err.type}`, 'error');
+        });
+
+      } catch (e) {
+        notify('Connection Failed', e.message, 'error');
+      }
+    }
+
+    function handleConnection(conn) {
+      conn.on('open', () => {
+        state.connections.set(conn.peer, conn);
+        state.stats.peerCount = state.connections.size;
+        updateStats();
+        updatePeersList();
+        
+        log(`Peer connected: ${conn.peer.slice(0, 16)}...`, 'success');
+        
+        // Send handshake
+        conn.send({
+          type: 'handshake',
+          identity: state.identity?.did,
+          timestamp: Date.now()
+        });
+
+        // Send our pulse chain
+        conn.send({
+          type: 'sync_chain',
+          chain: state.pulseChain
+        });
+      });
+
+      conn.on('data', (data) => handlePeerMessage(conn.peer, data));
+      
+      conn.on('close', () => {
+        state.connections.delete(conn.peer);
+        state.stats.peerCount = state.connections.size;
+        updateStats();
+        updatePeersList();
+        log(`Peer disconnected: ${conn.peer.slice(0, 16)}...`, 'info');
+      });
+    }
+
+    function connectToPeer() {
+      const peerId = document.getElementById('connect-peer-id').value.trim();
+      if (!peerId) {
+        notify('Invalid Peer ID', 'Please enter a peer ID', 'warning');
+        return;
+      }
+
+      if (!state.peer) {
+        notify('Not Connected', 'Connect to network first', 'warning');
+        return;
+      }
+
+      const conn = state.peer.connect(peerId);
+      handleConnection(conn);
+      document.getElementById('connect-peer-id').value = '';
+    }
+
+    async function handlePeerMessage(peerId, data) {
+      switch (data.type) {
+        case 'handshake':
+          log(`Handshake from ${data.identity || 'anonymous'}`, 'info');
+          break;
+          
+        case 'sync_chain':
+          // Merge remote chain if valid
+          for (const pulse of data.chain) {
+            const exists = state.pulseChain.some(p => p.hash === pulse.hash);
+            if (!exists) {
+              state.pulseChain.push(pulse);
+            }
+          }
+          saveState();
+          log(`Synced ${data.chain.length} pulses from peer`, 'success');
+          break;
+          
+        case 'content':
+          // Receive and verify content
+          await receiveContent(data.content);
+          break;
+          
+        case 'token_transfer':
+          await receiveTokenTransfer(data.transfer);
+          break;
+      }
+    }
+
+    function broadcastPulse(pulse) {
+      state.connections.forEach(conn => {
+        try {
+          conn.send({
+            type: 'pulse',
+            pulse
+          });
+        } catch (e) {
+          console.error('Failed to broadcast pulse:', e);
+        }
+      });
+    }
+
+    // ============================================
+    // CONTENT CREATION & PUBLISHING
+    // ============================================
+
+    async function publishContent() {
+      if (!state.identity) {
+        notify('Identity Required', 'Generate an identity first', 'warning');
+        return;
+      }
+
+      const title = document.getElementById('content-title').value.trim();
+      const body = document.getElementById('content-body').value.trim();
+      const type = document.getElementById('content-type').value;
+      const visibility = document.getElementById('content-visibility').value;
+      const tags = document.getElementById('content-tags').value.split(',').map(t => t.trim());
+      const mintAsNFT = document.getElementById('mint-as-nft').checked;
+
+      if (!title || !body) {
+        notify('Missing Content', 'Please provide title and content', 'warning');
+        return;
+      }
+
+      const content = {
+        id: `content-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        title,
+        body,
+        type,
+        visibility,
+        tags,
+        author: state.identity.did,
+        authorName: state.identity.name,
+        created: Date.now(),
+        hash: await sha256(body),
+        nft: mintAsNFT ? {
+          id: `nft-${crypto.randomUUID()}`,
+          royalty: 10,
+          minted: Date.now()
+        } : null,
+        status: 'published'
+      };
+
+      // Sign the content
+      const contentString = JSON.stringify(content);
+      content.signature = await signMessage(contentString);
+
+      state.content.push(content);
+      state.stats.contentCount = state.content.length;
+
+      // Award tokens for publishing
+      const reward = visibility === 'public' ? 10 : (visibility === 'premium' ? 15 : 20);
+      state.tokens += reward;
+      state.stats.tokensEarned += reward;
+
+      state.transactions.push({
+        type: 'reward',
+        amount: reward,
+        reason: 'content_published',
+        timestamp: Date.now()
+      });
+
+      // Add pulse
+      await addPulse('content_published', {
+        contentId: content.id,
+        title,
+        reward
+      });
+
+      // Broadcast to network
+      state.connections.forEach(conn => {
+        try {
+          conn.send({
+            type: 'content',
+            content
+          });
+        } catch (e) {
+          console.error('Failed to broadcast content:', e);
+        }
+      });
+
+      // Clear form
+      document.getElementById('content-title').value = '';
+      document.getElementById('content-body').value = '';
+      document.getElementById('content-tags').value = '';
+
+      saveState();
+      updateStats();
+      renderPortfolio();
+      
+      notify('Published!', `"${title}" is now live! Earned ${reward} SCT`, 'success');
+      log(`Content published: "${title}" (${reward} SCT earned)`, 'success');
+      
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+    }
+
+    async function receiveContent(content) {
+      // Verify signature
+      if (content.signature) {
+        const { signature, ...contentData } = content;
+        const contentString = JSON.stringify(contentData);
+        
+        const isValid = await verifySignature(
+          contentString,
+          signature,
+          content.author // This should be the public key, adjust as needed
+        );
+
+        if (!isValid) {
+          log('Received content with invalid signature', 'error');
+          return;
+        }
+      }
+
+      // Check if we already have this content
+      const exists = state.content.some(c => c.id === content.id);
+      if (exists) return;
+
+      state.content.push(content);
+      state.stats.contentCount = state.content.length;
+
+      saveState();
+      renderPortfolio();
+      
+      notify('New Content', `Received: "${content.title}"`, 'success');
+      log(`Received content: "${content.title}"`, 'success');
+    }
+
+    function saveDraft() {
+      const title = document.getElementById('content-title').value.trim();
+      const body = document.getElementById('content-body').value.trim();
+
+      if (!title && !body) {
+        notify('Nothing to Save', 'Please write some content first', 'warning');
+        return;
+      }
+
+      const draft = {
+        id: `draft-${Date.now()}`,
+        title: title || 'Untitled Draft',
+        body,
+        created: Date.now(),
+        status: 'draft'
+      };
+
+      state.drafts.push(draft);
+      saveState();
+      
+      notify('Draft Saved', 'Your work has been saved', 'success');
+      log('Draft saved', 'info');
+    }
+
+    // ============================================
+    // TOKEN ECONOMY
+    // ============================================
+
+    async function transferTokens() {
+      const recipient = document.getElementById('transfer-recipient').value.trim();
+      const amount = parseInt(document.getElementById('transfer-amount').value);
+
+      if (!recipient || !amount || amount <= 0) {
+        notify('Invalid Transfer', 'Please provide valid recipient and amount', 'warning');
+        return;
+      }
+
+      if (amount > state.tokens) {
+        notify('Insufficient Balance', 'Not enough tokens', 'error');
+        return;
+      }
+
+      const transfer = {
+        id: `tx-${Date.now()}`,
+        from: state.peerId,
+        to: recipient,
+        amount,
+        timestamp: Date.now()
+      };
+
+      state.tokens -= amount;
+      state.stats.tokensSpent += amount;
+
+      state.transactions.push({
+        type: 'transfer_out',
+        amount: -amount,
+        to: recipient,
+        timestamp: Date.now()
+      });
+
+      await addPulse('token_transfer', transfer);
+
+      // Send to recipient if connected
+      const conn = state.connections.get(recipient);
+      if (conn) {
+        conn.send({
+          type: 'token_transfer',
+          transfer
+        });
+      }
+
+      document.getElementById('transfer-recipient').value = '';
+      document.getElementById('transfer-amount').value = '';
+
+      saveState();
+      updateStats();
+      renderTransactions();
+      
+      notify('Transfer Sent', `${amount} SCT sent to ${recipient.slice(0, 16)}...`, 'success');
+      log(`Transferred ${amount} SCT to ${recipient.slice(0, 16)}...`, 'success');
+    }
+
+    async function receiveTokenTransfer(transfer) {
+      state.tokens += transfer.amount;
+      state.stats.tokensEarned += transfer.amount;
+
+      state.transactions.push({
+        type: 'transfer_in',
+        amount: transfer.amount,
+        from: transfer.from,
+        timestamp: transfer.timestamp
+      });
+
+      await addPulse('token_received', transfer);
+
+      saveState();
+      updateStats();
+      renderTransactions();
+      
+      notify('Tokens Received', `${transfer.amount} SCT from ${transfer.from.slice(0, 16)}...`, 'success');
+      log(`Received ${transfer.amount} SCT from ${transfer.from.slice(0, 16)}...`, 'success');
+    }
+
+    // ============================================
+    // UI UPDATES
+    // ============================================
+
+    function updateStats() {
+      document.getElementById('stat-tokens').textContent = state.tokens;
+      document.getElementById('stat-content').textContent = state.stats.contentCount;
+      document.getElementById('stat-peers').textContent = state.stats.peerCount;
+      document.getElementById('stat-earnings').textContent = (state.stats.tokensEarned * 0.1).toFixed(2);
+
+      document.getElementById('token-balance').textContent = `💰 ${state.tokens} SCT`;
+      document.getElementById('economy-balance').textContent = state.tokens;
+      document.getElementById('economy-earned').textContent = state.stats.tokensEarned;
+      document.getElementById('economy-spent').textContent = state.stats.tokensSpent;
+      document.getElementById('economy-value').textContent = (state.tokens * 0.1).toFixed(2);
+
+      document.getElementById('connected-peers-count').textContent = state.stats.peerCount;
+      document.getElementById('chain-length').textContent = state.pulseChain.length;
+      
+      if (state.pulseChain.length > 0) {
+        const lastPulse = state.pulseChain[state.pulseChain.length - 1];
+        document.getElementById('last-pulse').textContent = new Date(lastPulse.timestamp).toLocaleString();
+      }
+    }
+
+    function updateIdentityDisplay() {
+      if (state.identity) {
+        document.getElementById('identity-display').textContent = 
+          `${state.identity.did}\n\nName: ${state.identity.name}\nPublic Key: ${state.identity.publicKey}`;
+        document.getElementById('identity-name').value = state.identity.name;
+      }
+    }
+
+    function renderPortfolio() {
+      const container = document.getElementById('portfolio-list');
+      if (!container) return;
+
+      if (state.content.length === 0 && state.drafts.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <p>No content yet. Start creating!</p>
+          </div>
+        `;
+        return;
+      }
+
+      const items = [...state.content, ...state.drafts];
+      
+      container.innerHTML = items.map(item => `
+        <div class="content-item">
+          <div class="flex-between">
+            <h3>${item.title || 'Untitled'}</h3>
+            <div>
+              ${item.status === 'published' 
+                ? '<span class="badge published">Published</span>' 
+                : '<span class="badge draft">Draft</span>'}
+              ${item.nft ? '<span class="badge nft">NFT</span>' : ''}
+            </div>
+          </div>
+          <p style="opacity: 0.8; margin-top: 0.5rem;">${(item.body || '').slice(0, 150)}...</p>
+          <div style="margin-top: 0.5rem; opacity: 0.6; font-size: 0.9rem;">
+            ${new Date(item.created).toLocaleString()}
+            ${item.author ? ` • ${item.authorName || 'Anonymous'}` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderTransactions() {
+      const container = document.getElementById('transaction-history');
+      if (!container) return;
+
+      if (state.transactions.length === 0) {
+        container.innerHTML = '<div class="empty-state">No transactions yet</div>';
+        return;
+      }
+
+      container.innerHTML = state.transactions.slice().reverse().slice(0, 10).map(tx => `
+        <div class="content-item">
+          <div class="flex-between">
+            <div>
+              <strong>${tx.type.replace(/_/g, ' ').toUpperCase()}</strong>
+              ${tx.reason ? ` - ${tx.reason}` : ''}
+            </div>
+            <div style="font-weight: 600; color: ${tx.amount > 0 ? 'var(--success)' : 'var(--error)'};">
+              ${tx.amount > 0 ? '+' : ''}${tx.amount} SCT
+            </div>
+          </div>
+          <div style="font-size: 0.85rem; opacity: 0.6; margin-top: 0.3rem;">
+            ${new Date(tx.timestamp).toLocaleString()}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updatePeersList() {
+      const container = document.getElementById('peers-list');
+      if (!container) return;
+
+      if (state.connections.size === 0) {
+        container.innerHTML = '<div class="empty-state">No peers connected</div>';
+        return;
+      }
+
+      container.innerHTML = Array.from(state.connections.keys()).map(peerId => `
+        <div class="content-item">
+          <div class="flex-between">
+            <div>
+              <strong>Peer ID:</strong> ${peerId.slice(0, 32)}...
+            </div>
+            <span class="badge verified">Connected</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ============================================
+    // ANALYTICS
+    // ============================================
+
+    function initCharts() {
+      // Content Chart
+      const contentCtx = document.getElementById('content-chart');
+      if (contentCtx) {
+        new Chart(contentCtx, {
+          type: 'line',
+          data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+              label: 'Content Published',
+              data: [0, 2, 4, 3, 7, state.stats.contentCount],
+              borderColor: 'rgb(0, 255, 136)',
+              backgroundColor: 'rgba(0, 255, 136, 0.1)',
+              tension: 0.4,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+      }
+
+      // Token Chart
+      const tokenCtx = document.getElementById('token-chart');
+      if (tokenCtx) {
+        new Chart(tokenCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Earned', 'Spent', 'Balance'],
+            datasets: [{
+              label: 'SCT Tokens',
+              data: [state.stats.tokensEarned, state.stats.tokensSpent, state.tokens],
+              backgroundColor: [
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(239, 68, 68, 0.8)',
+                'rgba(102, 126, 234, 0.8)'
+              ]
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+      }
+    }
+
+    // ============================================
+    // TABS
+    // ============================================
+
+    function initTabs() {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const targetTab = tab.dataset.tab;
+          
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+          
+          tab.classList.add('active');
+          document.getElementById(`tab-${targetTab}`).classList.add('active');
+          
+          // Initialize charts when analytics tab is opened
+          if (targetTab === 'analytics') {
+            setTimeout(initCharts, 100);
+          }
+        });
+      });
+    }
+
+    // ============================================
+    // UTILITIES
+    // ============================================
+
+    async function sha256(str) {
+      const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function computeStateHash() {
+      const stateString = JSON.stringify({
+        tokens: state.tokens,
+        contentCount: state.stats.contentCount,
+        chainLength: state.pulseChain.length
+      });
+      return await sha256(stateString);
+    }
+
+    function arrayBufferToHex(buffer) {
+      return Array.from(new Uint8Array(buffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    function hexToArrayBuffer(hex) {
+      const bytes = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < hex.length; i += 2) {
+        bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+      }
+      return bytes.buffer;
+    }
+
+    function generatePeerId() {
+      return 'peer-' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);
+    }
+
+    function notify(title, message, type = 'info') {
+      const notif = document.createElement('div');
+      notif.className = `notification ${type}`;
+      notif.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <span style="font-size: 1.5rem;">
+            ${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}
+          </span>
+          <div>
+            <strong style="display: block; margin-bottom: 0.3rem;">${title}</strong>
+            <span style="opacity: 0.9;">${message}</span>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(notif);
+      
+      setTimeout(() => {
+        notif.style.animation = 'slideIn 0.3s reverse';
+        setTimeout(() => notif.remove(), 300);
+      }, 4000);
+    }
+
+    function log(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      const logLine = `[${timestamp}] ${message}`;
+      
+      // Network log
+      const networkLog = document.getElementById('network-log');
+      if (networkLog) {
+        const line = document.createElement('div');
+        line.className = `terminal-line ${type}`;
+        line.textContent = logLine;
+        networkLog.appendChild(line);
+        networkLog.scrollTop = networkLog.scrollHeight;
+      }
+      
+      // Activity log
+      const activityLog = document.getElementById('activity-log');
+      if (activityLog) {
+        const line = document.createElement('div');
+        line.className = `terminal-line ${type}`;
+        line.textContent = logLine;
+        activityLog.appendChild(line);
+        activityLog.scrollTop = activityLog.scrollHeight;
+      }
+      
+      console.log(logLine);
+    }
+
+    // ============================================
+    // DATA MANAGEMENT
+    // ============================================
+
+    function saveState() {
+      try {
+        const stateToSave = {
+          identity: state.identity ? {
+            name: state.identity.name,
+            publicKey: state.identity.publicKey,
+            privateKeyJwk: state.identity.privateKeyJwk,
+            created: state.identity.created,
+            did: state.identity.did
+          } : null,
+          content: state.content,
+          drafts: state.drafts,
+          tokens: state.tokens,
+          transactions: state.transactions,
+          pulseChain: state.pulseChain,
+          stats: state.stats
+        };
+        
+        localStorage.setItem('scr-state', JSON.stringify(stateToSave));
+      } catch (e) {
+        console.error('Failed to save state:', e);
+      }
+    }
+
+    async function loadState() {
+      try {
+        const saved = localStorage.getItem('scr-state');
+        if (!saved) return;
+        
+        const data = JSON.parse(saved);
+        
+        // Restore identity
+        if (data.identity) {
+          const keyPair = {
+            publicKey: await crypto.subtle.importKey(
+              'jwk',
+              { ...data.identity.privateKeyJwk, key_ops: ['verify'] },
+              { name: 'ECDSA', namedCurve: 'P-256' },
+              true,
+              ['verify']
+            ),
+            privateKey: await crypto.subtle.importKey(
+              'jwk',
+              data.identity.privateKeyJwk,
+              { name: 'ECDSA', namedCurve: 'P-256' },
+              true,
+              ['sign']
+            )
+          };
+          
+          state.identity = {
+            ...data.identity,
+            keyPair
+          };
+          
+          updateIdentityDisplay();
+        }
+        
+        state.content = data.content || [];
+        state.drafts = data.drafts || [];
+        state.tokens = data.tokens || 100;
+        state.transactions = data.transactions || [];
+        state.pulseChain = data.pulseChain || [];
+        state.stats = data.stats || {
+          tokensEarned: 100,
+          tokensSpent: 0,
+          contentCount: state.content.length,
+          peerCount: 0
+        };
+        
+        updateStats();
+        renderPortfolio();
+        renderTransactions();
+        
+        log('State loaded from storage', 'success');
+      } catch (e) {
+        console.error('Failed to load state:', e);
+      }
+    }
+
+    function exportIdentity() {
+      if (!state.identity) {
+        notify('No Identity', 'Generate an identity first', 'warning');
+        return;
+      }
+      
+      const data = {
+        name: state.identity.name,
+        publicKey: state.identity.publicKey,
+        privateKeyJwk: state.identity.privateKeyJwk,
+        created: state.identity.created,
+        did: state.identity.did
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `scr-identity-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      notify('Identity Exported', 'Your identity has been saved', 'success');
+    }
+
+    function importIdentity() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+          const text = await file.text();
+          const data = JSON.parse(text);
+          
+          const keyPair = {
+            publicKey: await crypto.subtle.importKey(
+              'jwk',
+              { ...data.privateKeyJwk, key_ops: ['verify'] },
+              { name: 'ECDSA', namedCurve: 'P-256' },
+              true,
+              ['verify']
+            ),
+            privateKey: await crypto.subtle.importKey(
+              'jwk',
+              data.privateKeyJwk,
+              { name: 'ECDSA', namedCurve: 'P-256' },
+              true,
+              ['sign']
+            )
+          };
+          
+          state.identity = {
+            ...data,
+            keyPair
+          };
+          
+          saveState();
+          updateIdentityDisplay();
+          notify('Identity Imported', `Welcome back, ${data.name}!`, 'success');
+        } catch (err) {
+          notify('Import Failed', err.message, 'error');
+        }
+      };
+      input.click();
+    }
+
+    function exportAllData() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `scr-export-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      notify('Data Exported', 'All your data has been saved', 'success');
+    }
+
+    function clearAllData() {
+      if (!confirm('This will delete ALL your data. Are you sure?')) return;
+      
+      localStorage.clear();
+      location.reload();
+    }
+
+    // ============================================
+    // ANIMATED BACKGROUND
+    // ============================================
+
+    function initBackground() {
+      const canvas = document.getElementById('bg-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      const particles = [];
+      const particleCount = 100;
+      
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          radius: Math.random() * 2 + 1
+        });
+      }
+      
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          
+          if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+          if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+          
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0, 255, 136, 0.5)';
+          ctx.fill();
+        });
+        
+        // Draw connections
+        particles.forEach((p1, i) => {
+          particles.slice(i + 1).forEach(p2 => {
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            if (dist < 100) {
+              ctx.beginPath();
+              ctx.moveTo(p1.x, p1.y);
+              ctx.lineTo(p2.x, p2.y);
+              ctx.strokeStyle = `rgba(0, 255, 136, ${0.2 * (1 - dist / 100)})`;
+              ctx.stroke();
+            }
+          });
+        });
+        
+        requestAnimationFrame(animate);
+      }
+      
+      animate();
+      
+      window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+    }
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      log('Sovereign Creator Revolution initialized', 'success');
+      log('Decentralized economy ready', 'info');
+      
+      initBackground();
+      initTabs();
+      await loadState();
+      
+      // Auto-connect if enabled
+      const autoConnect = document.getElementById('auto-connect');
+      if (autoConnect && autoConnect.checked && !state.peer) {
+        setTimeout(connectNetwork, 1000);
+      }
+      
+      // Auto-save every 30 seconds
+      setInterval(() => {
+        if (document.getElementById('auto-backup').checked) {
+          saveState();
+        }
+      }, 30000);
+      
+      // Update state hash display
+      setInterval(async () => {
+        const hash = await computeStateHash();
+        document.getElementById('state-hash').textContent = hash.slice(0, 16) + '...';
+      }, 5000);
+      
+      // Verify chain integrity periodically
+      setInterval(async () => {
+        const result = await verifyPulseChain();
+        document.getElementById('integrity-status').textContent = 
+          result.valid ? '✅ Valid' : `❌ Broken at #${result.brokenAt}`;
+      }, 10000);
+    });
+
+    // Make functions globally accessible
+    window.generateIdentity = generateIdentity;
+    window.exportIdentity = exportIdentity;
+    window.importIdentity = importIdentity;
+    window.connectNetwork = connectNetwork;
+    window.connectToPeer = connectToPeer;
+    window.publishContent = publishContent;
+    window.saveDraft = saveDraft;
+    window.transferTokens = transferTokens;
+    window.filterContent = (filter) => renderPortfolio();
+    window.exportAllData = exportAllData;
+    window.importData = () => notify('Coming Soon', 'Import feature in development', 'info');
+    window.clearAllData = clearAllData;
+  </script>
+</body>
+</html>

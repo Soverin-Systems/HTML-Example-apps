@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XHE P2P Mesh Network</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --lcars-orange: #ff9900;
+      --lcars-blue: #99ccff;
+      --lcars-purple: #cc99cc;
+      --lcars-red: #cc6666;
+      --lcars-gold: #ffcc66;
+      --lcars-teal: #66cccc;
+      --bg-dark: #000011;
+      --bg-panel: #0a0a1a;
+      --grid-color: rgba(102, 204, 204, 0.1);
+    }
+    
+    body {
+      font-family: 'Courier New', monospace;
+      background: var(--bg-dark);
+      color: var(--lcars-blue);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    /* LCARS-style header */
+    .lcars-header {
+      display: flex;
+      background: linear-gradient(90deg, var(--lcars-orange) 0%, var(--lcars-orange) 200px, transparent 200px);
+      padding: 10px 20px;
+      border-bottom: 3px solid var(--lcars-orange);
+      position: relative;
+    }
+    
+    .lcars-header::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 150px;
+      background: var(--lcars-purple);
+      clip-path: polygon(30% 0, 100% 0, 100% 100%, 0 100%);
+    }
+    
+    .lcars-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--bg-dark);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      padding-left: 20px;
+    }
+    
+    .lcars-subtitle {
+      color: var(--lcars-blue);
+      font-size: 12px;
+      margin-left: 20px;
+      align-self: center;
+    }
+    
+    /* Main container */
+    .main-container {
+      display: grid;
+      grid-template-columns: 80px 1fr 300px;
+      min-height: calc(100vh - 60px);
+    }
+    
+    /* Left sidebar - LCARS style */
+    .lcars-sidebar {
+      background: var(--bg-panel);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 10px 5px;
+    }
+    
+    .lcars-btn {
+      background: var(--lcars-orange);
+      color: var(--bg-dark);
+      border: none;
+      padding: 15px 10px;
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 0 20px 20px 0;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    
+    .lcars-btn:hover {
+      filter: brightness(1.2);
+      transform: translateX(5px);
+    }
+    
+    .lcars-btn.blue { background: var(--lcars-blue); }
+    .lcars-btn.purple { background: var(--lcars-purple); }
+    .lcars-btn.teal { background: var(--lcars-teal); }
+    .lcars-btn.gold { background: var(--lcars-gold); }
+    .lcars-btn.red { background: var(--lcars-red); }
+    
+    /* Main content area */
+    .content-area {
+      padding: 20px;
+      position: relative;
+      background: 
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
+    
+    /* Network visualization */
+    .network-canvas {
+      width: 100%;
+      height: 500px;
+      background: radial-gradient(ellipse at center, rgba(102, 204, 204, 0.05) 0%, transparent 70%);
+      border: 2px solid var(--lcars-teal);
+      border-radius: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .node {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle at 30% 30%, var(--lcars-blue), var(--lcars-purple));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+      color: var(--bg-dark);
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 0 20px rgba(153, 204, 255, 0.5);
+      animation: pulse 2s infinite;
+    }
+    
+    .node.self {
+      background: radial-gradient(circle at 30% 30%, var(--lcars-gold), var(--lcars-orange));
+      box-shadow: 0 0 30px rgba(255, 153, 0, 0.7);
+      width: 80px;
+      height: 80px;
+      font-size: 12px;
+    }
+    
+    .node:hover {
+      transform: scale(1.2);
+      z-index: 100;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(153, 204, 255, 0.5); }
+      50% { box-shadow: 0 0 40px rgba(153, 204, 255, 0.8); }
+    }
+    
+    /* Connection lines drawn via SVG */
+    .connections-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    
+    .connection-line {
+      stroke: var(--lcars-teal);
+      stroke-width: 2;
+      opacity: 0.6;
+      stroke-dasharray: 5,5;
+      animation: dash 1s linear infinite;
+    }
+    
+    @keyframes dash {
+      to { stroke-dashoffset: -10; }
+    }
+    
+    /* Right panel */
+    .info-panel {
+      background: var(--bg-panel);
+      border-left: 3px solid var(--lcars-purple);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .panel-section {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--lcars-teal);
+      border-radius: 5px;
+      padding: 15px;
+    }
+    
+    .panel-title {
+      color: var(--lcars-orange);
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(102, 204, 204, 0.2);
+    }
+    
+    .stat-label { color: var(--lcars-blue); }
+    .stat-value { color: var(--lcars-gold); font-weight: bold; }
+    
+    .peer-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .peer-item {
+      padding: 8px;
+      margin: 5px 0;
+      background: rgba(102, 204, 204, 0.1);
+      border-radius: 3px;
+      font-size: 11px;
+      word-break: break-all;
+    }
+    
+    .peer-item.connected { border-left: 3px solid var(--lcars-teal); }
+    .peer-item.pending { border-left: 3px solid var(--lcars-gold); }
+    
+    /* Message log */
+    .message-log {
+      flex: 1;
+      overflow-y: auto;
+      font-size: 11px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 5px;
+      max-height: 150px;
+    }
+    
+    .log-entry {
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(102, 204, 204, 0.1);
+    }
+    
+    .log-time { color: var(--lcars-purple); }
+    .log-msg { color: var(--lcars-blue); }
+    
+    /* Input area */
+    .input-area {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
+    }
+    
+    .input-area input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--lcars-teal);
+      color: var(--lcars-blue);
+      padding: 10px;
+      font-family: inherit;
+      border-radius: 5px;
+    }
+    
+    .input-area button {
+      background: var(--lcars-orange);
+      color: var(--bg-dark);
+      border: none;
+      padding: 10px 20px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 5px;
+      text-transform: uppercase;
+    }
+    
+    /* Status bar */
+    .status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-panel);
+      border-top: 3px solid var(--lcars-orange);
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--lcars-teal);
+      animation: blink 1s infinite;
+    }
+    
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+  <header class="lcars-header">
+    <div class="lcars-title">P2P Mesh Network</div>
+    <div class="lcars-subtitle">XHE Sovereign Compute Substrate // WebRTC Transport Layer</div>
+  </header>
+  
+  <div class="main-container">
+    <aside class="lcars-sidebar">
+      <button class="lcars-btn" onclick="initializeNode()" data-testid="init-node-btn">Init Node</button>
+      <button class="lcars-btn blue" onclick="discoverPeers()" data-testid="discover-btn">Discover</button>
+      <button class="lcars-btn purple" onclick="broadcastMessage()" data-testid="broadcast-btn">Broadcast</button>
+      <button class="lcars-btn teal" onclick="syncState()" data-testid="sync-btn">Sync</button>
+      <button class="lcars-btn gold" onclick="exportNode()" data-testid="export-btn">Export</button>
+      <button class="lcars-btn red" onclick="disconnectAll()" data-testid="disconnect-btn">Disc All</button>
+    </aside>
+    
+    <main class="content-area">
+      <div class="network-canvas" id="networkCanvas" data-testid="network-canvas">
+        <svg class="connections-svg" id="connectionsSvg"></svg>
+      </div>
+    </main>
+    
+    <aside class="info-panel">
+      <div class="panel-section">
+        <div class="panel-title">Node Status</div>
+        <div class="stat-row">
+          <span class="stat-label">Node ID:</span>
+          <span class="stat-value" id="nodeId" data-testid="node-id">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Peers:</span>
+          <span class="stat-value" id="peerCount" data-testid="peer-count">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Messages:</span>
+          <span class="stat-value" id="msgCount" data-testid="msg-count">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Uptime:</span>
+          <span class="stat-value" id="uptime" data-testid="uptime">00:00:00</span>
+        </div>
+      </div>
+      
+      <div class="panel-section">
+        <div class="panel-title">Connected Peers</div>
+        <div class="peer-list" id="peerList" data-testid="peer-list"></div>
+      </div>
+      
+      <div class="panel-section" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="panel-title">Network Log</div>
+        <div class="message-log" id="messageLog" data-testid="message-log"></div>
+      </div>
+      
+      <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Broadcast message..." data-testid="message-input">
+        <button onclick="sendMessage()" data-testid="send-btn">Send</button>
+      </div>
+    </aside>
+  </div>
+  
+  <footer class="status-bar">
+    <div class="status-indicator">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText" data-testid="status-text">Initializing...</span>
+    </div>
+    <div>
+      <span>Transport: WebRTC | Protocol: XHE-P2P/1.0</span>
+    </div>
+  </footer>
+
+  <script>
+    // ============================================
+    // XHE P2P MESH NETWORK - BROWSER-NATIVE
+    // ============================================
+    
+    // Cryptographic utilities
+    const Crypto = {
+      async generateKeyPair() {
+        const keyPair = await crypto.subtle.generateKey(
+          { name: 'ECDSA', namedCurve: 'P-256' },
+          true,
+          ['sign', 'verify']
+        );
+        return keyPair;
+      },
+      
+      async exportPublicKey(key) {
+        const exported = await crypto.subtle.exportKey('spki', key);
+        return this.bufferToHex(exported);
+      },
+      
+      async sign(privateKey, data) {
+        const encoded = new TextEncoder().encode(JSON.stringify(data));
+        const signature = await crypto.subtle.sign(
+          { name: 'ECDSA', hash: 'SHA-256' },
+          privateKey,
+          encoded
+        );
+        return this.bufferToHex(signature);
+      },
+      
+      async verify(publicKey, signature, data) {
+        const encoded = new TextEncoder().encode(JSON.stringify(data));
+        const sigBuffer = this.hexToBuffer(signature);
+        return crypto.subtle.verify(
+          { name: 'ECDSA', hash: 'SHA-256' },
+          publicKey,
+          sigBuffer,
+          encoded
+        );
+      },
+      
+      async hash(data) {
+        const encoded = new TextEncoder().encode(JSON.stringify(data));
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+        return this.bufferToHex(hashBuffer);
+      },
+      
+      bufferToHex(buffer) {
+        return Array.from(new Uint8Array(buffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      },
+      
+      hexToBuffer(hex) {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < bytes.length; i++) {
+          bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+        }
+        return bytes.buffer;
+      },
+      
+      generateId() {
+        const array = new Uint8Array(16);
+        crypto.getRandomValues(array);
+        return this.bufferToHex(array);
+      }
+    };
+
+    // P2P Mesh Node
+    class P2PMeshNode {
+      constructor() {
+        this.id = null;
+        this.keyPair = null;
+        this.publicKeyHex = null;
+        this.peers = new Map();
+        this.connections = new Map();
+        this.messageHistory = [];
+        this.startTime = null;
+        this.messageCount = 0;
+        this.iceServers = [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ];
+        this.onPeerConnected = null;
+        this.onPeerDisconnected = null;
+        this.onMessageReceived = null;
+      }
+      
+      async initialize() {
+        // Generate cryptographic identity
+        this.keyPair = await Crypto.generateKeyPair();
+        this.publicKeyHex = await Crypto.exportPublicKey(this.keyPair.publicKey);
+        this.id = 'xhe:' + this.publicKeyHex.substring(0, 16);
+        this.startTime = Date.now();
+        
+        // Start signaling simulation (in production, use WebSocket/IPFS)
+        this.startSignaling();
+        
+        log(`Node initialized: ${this.id}`);
+        return this;
+      }
+      
+      startSignaling() {
+        // Simulated signaling via BroadcastChannel (works across tabs)
+        this.signalChannel = new BroadcastChannel('xhe-p2p-mesh');
+        this.signalChannel.onmessage = (e) => this.handleSignal(e.data);
+        
+        // Announce presence
+        this.announce();
+      }
+      
+      announce() {
+        this.signalChannel.postMessage({
+          type: 'announce',
+          from: this.id,
+          publicKey: this.publicKeyHex,
+          timestamp: Date.now()
+        });
+      }
+      
+      async handleSignal(signal) {
+        if (signal.from === this.id) return;
+        
+        switch (signal.type) {
+          case 'announce':
+            if (!this.peers.has(signal.from)) {
+              this.addPeer(signal.from, signal.publicKey);
+              await this.initiateConnection(signal.from);
+            }
+            break;
+            
+          case 'offer':
+            if (signal.to === this.id) {
+              await this.handleOffer(signal);
+            }
+            break;
+            
+          case 'answer':
+            if (signal.to === this.id) {
+              await this.handleAnswer(signal);
+            }
+            break;
+            
+          case 'ice-candidate':
+            if (signal.to === this.id) {
+              await this.handleIceCandidate(signal);
+            }
+            break;
+            
+          case 'message':
+            this.handleMessage(signal);
+            break;
+        }
+      }
+      
+      addPeer(peerId, publicKey) {
+        this.peers.set(peerId, {
+          id: peerId,
+          publicKey,
+          connected: false,
+          lastSeen: Date.now()
+        });
+        log(`Peer discovered: ${peerId.substring(0, 20)}...`);
+        updateUI();
+      }
+      
+      async initiateConnection(peerId) {
+        const pc = new RTCPeerConnection({ iceServers: this.iceServers });
+        this.connections.set(peerId, pc);
+        
+        // Create data channel
+        const dc = pc.createDataChannel('xhe-mesh');
+        this.setupDataChannel(dc, peerId);
+        
+        // Handle ICE candidates
+        pc.onicecandidate = (e) => {
+          if (e.candidate) {
+            this.signalChannel.postMessage({
+              type: 'ice-candidate',
+              from: this.id,
+              to: peerId,
+              candidate: e.candidate
+            });
+          }
+        };
+        
+        // Create and send offer
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        
+        this.signalChannel.postMessage({
+          type: 'offer',
+          from: this.id,
+          to: peerId,
+          sdp: offer
+        });
+      }
+      
+      async handleOffer(signal) {
+        const pc = new RTCPeerConnection({ iceServers: this.iceServers });
+        this.connections.set(signal.from, pc);
+        
+        pc.ondatachannel = (e) => {
+          this.setupDataChannel(e.channel, signal.from);
+        };
+        
+        pc.onicecandidate = (e) => {
+          if (e.candidate) {
+            this.signalChannel.postMessage({
+              type: 'ice-candidate',
+              from: this.id,
+              to: signal.from,
+              candidate: e.candidate
+            });
+          }
+        };
+        
+        await pc.setRemoteDescription(signal.sdp);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        
+        this.signalChannel.postMessage({
+          type: 'answer',
+          from: this.id,
+          to: signal.from,
+          sdp: answer
+        });
+      }
+      
+      async handleAnswer(signal) {
+        const pc = this.connections.get(signal.from);
+        if (pc) {
+          await pc.setRemoteDescription(signal.sdp);
+        }
+      }
+      
+      async handleIceCandidate(signal) {
+        const pc = this.connections.get(signal.from);
+        if (pc) {
+          await pc.addIceCandidate(signal.candidate);
+        }
+      }
+      
+      setupDataChannel(dc, peerId) {
+        dc.onopen = () => {
+          const peer = this.peers.get(peerId);
+          if (peer) {
+            peer.connected = true;
+            peer.dataChannel = dc;
+          }
+          log(`Connected to peer: ${peerId.substring(0, 20)}...`);
+          if (this.onPeerConnected) this.onPeerConnected(peerId);
+          updateUI();
+        };
+        
+        dc.onclose = () => {
+          const peer = this.peers.get(peerId);
+          if (peer) peer.connected = false;
+          log(`Disconnected from peer: ${peerId.substring(0, 20)}...`);
+          if (this.onPeerDisconnected) this.onPeerDisconnected(peerId);
+          updateUI();
+        };
+        
+        dc.onmessage = (e) => {
+          const msg = JSON.parse(e.data);
+          this.messageHistory.push(msg);
+          this.messageCount++;
+          log(`Message from ${peerId.substring(0, 10)}: ${msg.content.substring(0, 30)}...`);
+          if (this.onMessageReceived) this.onMessageReceived(msg);
+          updateUI();
+        };
+      }
+      
+      handleMessage(signal) {
+        if (signal.from !== this.id) {
+          this.messageHistory.push({
+            from: signal.from,
+            content: signal.content,
+            timestamp: signal.timestamp
+          });
+          this.messageCount++;
+          log(`Broadcast from ${signal.from.substring(0, 10)}: ${signal.content.substring(0, 30)}...`);
+          if (this.onMessageReceived) this.onMessageReceived(signal);
+          updateUI();
+        }
+      }
+      
+      async broadcast(content) {
+        const message = {
+          type: 'message',
+          from: this.id,
+          content,
+          timestamp: Date.now(),
+          signature: await Crypto.sign(this.keyPair.privateKey, { content, timestamp: Date.now() })
+        };
+        
+        // Send via signaling channel (for discovery)
+        this.signalChannel.postMessage(message);
+        
+        // Send via direct connections
+        this.peers.forEach((peer, peerId) => {
+          if (peer.connected && peer.dataChannel) {
+            peer.dataChannel.send(JSON.stringify(message));
+          }
+        });
+        
+        this.messageCount++;
+        log(`Broadcast sent: ${content.substring(0, 30)}...`);
+        updateUI();
+      }
+      
+      getConnectedPeers() {
+        return Array.from(this.peers.values()).filter(p => p.connected);
+      }
+      
+      getAllPeers() {
+        return Array.from(this.peers.values());
+      }
+      
+      disconnect(peerId) {
+        const pc = this.connections.get(peerId);
+        if (pc) pc.close();
+        this.connections.delete(peerId);
+        this.peers.delete(peerId);
+        updateUI();
+      }
+      
+      disconnectAll() {
+        this.connections.forEach(pc => pc.close());
+        this.connections.clear();
+        this.peers.forEach(p => p.connected = false);
+        log('Disconnected from all peers');
+        updateUI();
+      }
+      
+      getUptime() {
+        if (!this.startTime) return '00:00:00';
+        const elapsed = Date.now() - this.startTime;
+        const hours = Math.floor(elapsed / 3600000);
+        const minutes = Math.floor((elapsed % 3600000) / 60000);
+        const seconds = Math.floor((elapsed % 60000) / 1000);
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+      
+      export() {
+        return {
+          id: this.id,
+          publicKey: this.publicKeyHex,
+          peers: Array.from(this.peers.keys()),
+          messageCount: this.messageCount,
+          uptime: this.getUptime()
+        };
+      }
+    }
+
+    // Global node instance
+    let node = null;
+    
+    // UI Update functions
+    function updateUI() {
+      if (!node) return;
+      
+      document.getElementById('nodeId').textContent = node.id ? node.id.substring(0, 12) + '...' : '--';
+      document.getElementById('peerCount').textContent = node.getConnectedPeers().length;
+      document.getElementById('msgCount').textContent = node.messageCount;
+      document.getElementById('uptime').textContent = node.getUptime();
+      
+      // Update peer list
+      const peerList = document.getElementById('peerList');
+      peerList.innerHTML = '';
+      node.getAllPeers().forEach(peer => {
+        const div = document.createElement('div');
+        div.className = `peer-item ${peer.connected ? 'connected' : 'pending'}`;
+        div.textContent = peer.id.substring(0, 24) + '...';
+        peerList.appendChild(div);
+      });
+      
+      // Update network visualization
+      renderNetwork();
+    }
+    
+    function renderNetwork() {
+      const canvas = document.getElementById('networkCanvas');
+      const svg = document.getElementById('connectionsSvg');
+      
+      // Clear existing nodes (except SVG)
+      canvas.querySelectorAll('.node').forEach(n => n.remove());
+      svg.innerHTML = '';
+      
+      if (!node) return;
+      
+      const centerX = canvas.offsetWidth / 2;
+      const centerY = canvas.offsetHeight / 2;
+      
+      // Render self node at center
+      const selfNode = document.createElement('div');
+      selfNode.className = 'node self';
+      selfNode.textContent = 'YOU';
+      selfNode.style.left = (centerX - 40) + 'px';
+      selfNode.style.top = (centerY - 40) + 'px';
+      selfNode.setAttribute('data-testid', 'self-node');
+      canvas.appendChild(selfNode);
+      
+      // Render peers in circle
+      const peers = node.getAllPeers();
+      const angleStep = (2 * Math.PI) / Math.max(peers.length, 1);
+      const radius = Math.min(canvas.offsetWidth, canvas.offsetHeight) * 0.35;
+      
+      peers.forEach((peer, i) => {
+        const angle = angleStep * i - Math.PI / 2;
+        const x = centerX + radius * Math.cos(angle) - 30;
+        const y = centerY + radius * Math.sin(angle) - 30;
+        
+        const peerNode = document.createElement('div');
+        peerNode.className = 'node';
+        peerNode.textContent = peer.id.substring(4, 8).toUpperCase();
+        peerNode.style.left = x + 'px';
+        peerNode.style.top = y + 'px';
+        peerNode.style.opacity = peer.connected ? 1 : 0.5;
+        canvas.appendChild(peerNode);
+        
+        // Draw connection line
+        if (peer.connected) {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', centerX);
+          line.setAttribute('y1', centerY);
+          line.setAttribute('x2', x + 30);
+          line.setAttribute('y2', y + 30);
+          line.setAttribute('class', 'connection-line');
+          svg.appendChild(line);
+        }
+      });
+    }
+    
+    function log(message) {
+      const logDiv = document.getElementById('messageLog');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      const time = new Date().toLocaleTimeString();
+      entry.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-msg">${message}</span>`;
+      logDiv.appendChild(entry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+    
+    function setStatus(text, connected = true) {
+      document.getElementById('statusText').textContent = text;
+      document.getElementById('statusDot').style.background = connected ? 'var(--lcars-teal)' : 'var(--lcars-red)';
+    }
+    
+    // Control functions
+    async function initializeNode() {
+      if (node) {
+        log('Node already initialized');
+        return;
+      }
+      
+      log('Initializing P2P mesh node...');
+      setStatus('Initializing...', false);
+      
+      node = new P2PMeshNode();
+      await node.initialize();
+      
+      setStatus('Online - P2P Mesh Active');
+      updateUI();
+      
+      // Start uptime counter
+      setInterval(updateUI, 1000);
+    }
+    
+    function discoverPeers() {
+      if (!node) {
+        log('ERROR: Node not initialized');
+        return;
+      }
+      log('Broadcasting discovery request...');
+      node.announce();
+    }
+    
+    function broadcastMessage() {
+      const input = document.getElementById('messageInput');
+      if (!input.value.trim()) {
+        input.value = 'Hello from XHE P2P Mesh!';
+      }
+      sendMessage();
+    }
+    
+    async function sendMessage() {
+      if (!node) {
+        log('ERROR: Node not initialized');
+        return;
+      }
+      
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      if (!message) return;
+      
+      await node.broadcast(message);
+      input.value = '';
+    }
+    
+    function syncState() {
+      if (!node) {
+        log('ERROR: Node not initialized');
+        return;
+      }
+      log('Synchronizing state with peers...');
+      node.announce();
+      log(`State synced: ${node.getConnectedPeers().length} peers, ${node.messageCount} messages`);
+    }
+    
+    function exportNode() {
+      if (!node) {
+        log('ERROR: Node not initialized');
+        return;
+      }
+      
+      const data = node.export();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `xhe-node-${node.id.substring(4, 12)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      log('Node data exported');
+    }
+    
+    function disconnectAll() {
+      if (!node) {
+        log('ERROR: Node not initialized');
+        return;
+      }
+      node.disconnectAll();
+      setStatus('Disconnected', false);
+    }
+    
+    // Handle Enter key in message input
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+    
+    // Auto-initialize on load
+    window.addEventListener('load', () => {
+      log('XHE P2P Mesh Network v1.0');
+      log('Click "Init Node" to start');
+      renderNetwork();
+    });
+    
+    // Handle window resize
+    window.addEventListener('resize', renderNetwork);
+  </script>
+</body>
+</html>

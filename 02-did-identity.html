@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XHE DID Identity System</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --lcars-orange: #ff9900;
+      --lcars-blue: #99ccff;
+      --lcars-purple: #cc99cc;
+      --lcars-red: #cc6666;
+      --lcars-gold: #ffcc66;
+      --lcars-teal: #66cccc;
+      --bg-dark: #000011;
+      --bg-panel: #0a0a1a;
+    }
+    
+    body {
+      font-family: 'Courier New', monospace;
+      background: var(--bg-dark);
+      color: var(--lcars-blue);
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(ellipse at 20% 80%, rgba(102, 204, 204, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(255, 153, 0, 0.03) 0%, transparent 50%);
+    }
+    
+    .lcars-frame {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      grid-template-rows: 80px 1fr 60px;
+      min-height: 100vh;
+      gap: 3px;
+    }
+    
+    .lcars-header {
+      grid-column: 1 / -1;
+      background: var(--bg-panel);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      position: relative;
+    }
+    
+    .lcars-header-block {
+      width: 200px;
+      height: 60px;
+      background: var(--lcars-orange);
+      border-radius: 0 0 30px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .lcars-header-title {
+      font-size: 28px;
+      font-weight: bold;
+      color: var(--bg-dark);
+      letter-spacing: 2px;
+    }
+    
+    .lcars-header-info {
+      margin-left: 30px;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .lcars-header-sub {
+      font-size: 14px;
+      color: var(--lcars-purple);
+    }
+    
+    .lcars-header-stat {
+      font-size: 20px;
+      color: var(--lcars-gold);
+    }
+    
+    .lcars-header-end {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 300px;
+      height: 100%;
+      background: linear-gradient(90deg, transparent 0%, var(--lcars-purple) 30%);
+      clip-path: polygon(30% 0, 100% 0, 100% 100%, 0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 20px;
+    }
+    
+    .header-time {
+      font-size: 24px;
+      color: var(--bg-dark);
+      font-weight: bold;
+    }
+    
+    .lcars-sidebar {
+      background: var(--bg-panel);
+      display: flex;
+      flex-direction: column;
+      padding: 10px 0;
+    }
+    
+    .sidebar-block {
+      background: var(--lcars-blue);
+      margin: 3px 0;
+      padding: 15px 10px;
+      border-radius: 0 20px 20px 0;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--bg-dark);
+      text-transform: uppercase;
+    }
+    
+    .sidebar-block:hover {
+      filter: brightness(1.2);
+      transform: translateX(5px);
+    }
+    
+    .sidebar-block.orange { background: var(--lcars-orange); }
+    .sidebar-block.purple { background: var(--lcars-purple); }
+    .sidebar-block.teal { background: var(--lcars-teal); }
+    .sidebar-block.gold { background: var(--lcars-gold); }
+    .sidebar-block.red { background: var(--lcars-red); }
+    
+    .sidebar-spacer {
+      flex: 1;
+      background: linear-gradient(180deg, var(--lcars-teal) 0%, var(--lcars-teal) 30%, transparent 30%, transparent 70%, var(--lcars-teal) 70%);
+      margin: 10px 0;
+      border-radius: 0 10px 10px 0;
+      width: 60%;
+    }
+    
+    .main-content {
+      background: var(--bg-panel);
+      padding: 30px;
+      overflow-y: auto;
+    }
+    
+    .identity-card {
+      background: linear-gradient(135deg, rgba(0,0,0,0.5) 0%, rgba(102, 204, 204, 0.1) 100%);
+      border: 2px solid var(--lcars-teal);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .identity-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, rgba(255, 153, 0, 0.1) 0%, transparent 70%);
+    }
+    
+    .identity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    
+    .identity-avatar {
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(135deg, var(--lcars-orange) 0%, var(--lcars-gold) 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      color: var(--bg-dark);
+      font-weight: bold;
+    }
+    
+    .identity-info {
+      flex: 1;
+      margin-left: 30px;
+    }
+    
+    .identity-did {
+      font-size: 12px;
+      color: var(--lcars-purple);
+      word-break: break-all;
+      margin-bottom: 10px;
+      background: rgba(0,0,0,0.3);
+      padding: 10px;
+      border-radius: 5px;
+    }
+    
+    .identity-name {
+      font-size: 28px;
+      color: var(--lcars-gold);
+      margin-bottom: 5px;
+    }
+    
+    .identity-status {
+      display: inline-block;
+      background: var(--lcars-teal);
+      color: var(--bg-dark);
+      padding: 5px 15px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .key-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .key-box {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--lcars-blue);
+      border-radius: 10px;
+      padding: 15px;
+    }
+    
+    .key-label {
+      font-size: 12px;
+      color: var(--lcars-orange);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    
+    .key-value {
+      font-size: 10px;
+      word-break: break-all;
+      color: var(--lcars-blue);
+      max-height: 80px;
+      overflow-y: auto;
+    }
+    
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 30px;
+    }
+    
+    .action-btn {
+      background: linear-gradient(135deg, var(--lcars-orange) 0%, var(--lcars-gold) 100%);
+      border: none;
+      padding: 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: left;
+    }
+    
+    .action-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(255, 153, 0, 0.3);
+    }
+    
+    .action-btn.secondary {
+      background: linear-gradient(135deg, var(--lcars-blue) 0%, var(--lcars-teal) 100%);
+    }
+    
+    .action-btn.tertiary {
+      background: linear-gradient(135deg, var(--lcars-purple) 0%, var(--lcars-blue) 100%);
+    }
+    
+    .action-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--bg-dark);
+      margin-bottom: 5px;
+    }
+    
+    .action-desc {
+      font-size: 11px;
+      color: rgba(0,0,17,0.7);
+    }
+    
+    .credentials-section {
+      margin-top: 30px;
+    }
+    
+    .section-title {
+      font-size: 18px;
+      color: var(--lcars-orange);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--lcars-orange);
+    }
+    
+    .credential-list {
+      display: grid;
+      gap: 15px;
+    }
+    
+    .credential-item {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--lcars-teal);
+      border-radius: 10px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 20px;
+      align-items: center;
+    }
+    
+    .credential-icon {
+      width: 50px;
+      height: 50px;
+      background: var(--lcars-purple);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    
+    .credential-info h4 {
+      color: var(--lcars-gold);
+      margin-bottom: 5px;
+    }
+    
+    .credential-info p {
+      font-size: 12px;
+      color: var(--lcars-blue);
+    }
+    
+    .credential-badge {
+      background: var(--lcars-teal);
+      color: var(--bg-dark);
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    
+    .credential-badge.unverified {
+      background: var(--lcars-gold);
+    }
+    
+    .lcars-footer {
+      grid-column: 1 / -1;
+      background: var(--bg-panel);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+    }
+    
+    .footer-block {
+      height: 40px;
+      background: var(--lcars-orange);
+      border-radius: 20px 0 0 0;
+      width: 150px;
+    }
+    
+    .footer-info {
+      flex: 1;
+      display: flex;
+      justify-content: space-around;
+      padding: 0 20px;
+    }
+    
+    .footer-stat {
+      text-align: center;
+    }
+    
+    .footer-stat-label {
+      font-size: 10px;
+      color: var(--lcars-purple);
+    }
+    
+    .footer-stat-value {
+      font-size: 16px;
+      color: var(--lcars-gold);
+    }
+    
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,17,0.9);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-overlay.active { display: flex; }
+    
+    .modal-content {
+      background: var(--bg-panel);
+      border: 2px solid var(--lcars-orange);
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .modal-title {
+      font-size: 20px;
+      color: var(--lcars-orange);
+    }
+    
+    .modal-close {
+      background: var(--lcars-red);
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--bg-dark);
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 12px;
+      color: var(--lcars-purple);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    
+    .form-input {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--lcars-teal);
+      color: var(--lcars-blue);
+      padding: 12px;
+      font-family: inherit;
+      border-radius: 5px;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: var(--lcars-orange);
+    }
+    
+    .form-submit {
+      width: 100%;
+      background: var(--lcars-orange);
+      border: none;
+      padding: 15px;
+      font-family: inherit;
+      font-weight: bold;
+      color: var(--bg-dark);
+      cursor: pointer;
+      border-radius: 10px;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+    
+    /* Log output */
+    .log-output {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--lcars-teal);
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 11px;
+    }
+    
+    .log-entry {
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(102, 204, 204, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="lcars-frame">
+    <header class="lcars-header">
+      <div class="lcars-header-block">
+        <span class="lcars-header-title">DID</span>
+      </div>
+      <div class="lcars-header-info">
+        <span class="lcars-header-sub">Decentralized Identity System</span>
+        <span class="lcars-header-stat" id="identityStatus" data-testid="identity-status">No Identity</span>
+      </div>
+      <div class="lcars-header-end">
+        <span class="header-time" id="headerTime">00:00:00</span>
+      </div>
+    </header>
+    
+    <nav class="lcars-sidebar">
+      <div class="sidebar-block orange" onclick="generateIdentity()" data-testid="generate-btn">Generate</div>
+      <div class="sidebar-block" onclick="showSignModal()" data-testid="sign-btn">Sign Data</div>
+      <div class="sidebar-block purple" onclick="showVerifyModal()" data-testid="verify-btn">Verify</div>
+      <div class="sidebar-block teal" onclick="showCredentialModal()" data-testid="credential-btn">Add Cred</div>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-block gold" onclick="exportIdentity()" data-testid="export-btn">Export</div>
+      <div class="sidebar-block" onclick="importIdentity()" data-testid="import-btn">Import</div>
+      <div class="sidebar-block red" onclick="revokeIdentity()" data-testid="revoke-btn">Revoke</div>
+    </nav>
+    
+    <main class="main-content">
+      <div class="identity-card" id="identityCard" data-testid="identity-card">
+        <div class="identity-header">
+          <div class="identity-avatar" id="identityAvatar">?</div>
+          <div class="identity-info">
+            <div class="identity-did" id="identityDid" data-testid="identity-did">
+              Generate an identity to begin
+            </div>
+            <div class="identity-name" id="identityName">Unknown Identity</div>
+            <span class="identity-status" id="identityBadge">INACTIVE</span>
+          </div>
+        </div>
+        
+        <div class="key-section">
+          <div class="key-box">
+            <div class="key-label">Public Key (ECDSA P-256)</div>
+            <div class="key-value" id="publicKey" data-testid="public-key">--</div>
+          </div>
+          <div class="key-box">
+            <div class="key-label">Key ID / Fingerprint</div>
+            <div class="key-value" id="keyFingerprint" data-testid="key-fingerprint">--</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="action-grid">
+        <button class="action-btn" onclick="generateIdentity()" data-testid="action-generate">
+          <div class="action-title">Generate Identity</div>
+          <div class="action-desc">Create new cryptographic DID with key pair</div>
+        </button>
+        <button class="action-btn secondary" onclick="showSignModal()" data-testid="action-sign">
+          <div class="action-title">Sign Message</div>
+          <div class="action-desc">Cryptographically sign data with your private key</div>
+        </button>
+        <button class="action-btn tertiary" onclick="showVerifyModal()" data-testid="action-verify">
+          <div class="action-title">Verify Signature</div>
+          <div class="action-desc">Validate a signature against a public key</div>
+        </button>
+        <button class="action-btn" onclick="showCredentialModal()" data-testid="action-credential">
+          <div class="action-title">Issue Credential</div>
+          <div class="action-desc">Create verifiable credential for this identity</div>
+        </button>
+      </div>
+      
+      <div class="credentials-section">
+        <h3 class="section-title">Verifiable Credentials</h3>
+        <div class="credential-list" id="credentialList" data-testid="credential-list">
+          <div class="credential-item" style="opacity: 0.5;">
+            <div class="credential-icon">📜</div>
+            <div class="credential-info">
+              <h4>No Credentials Yet</h4>
+              <p>Generate an identity and add credentials</p>
+            </div>
+            <span class="credential-badge unverified">EMPTY</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="log-output" id="logOutput" data-testid="log-output">
+        <div class="log-entry">XHE DID Identity System v1.0 initialized</div>
+      </div>
+    </main>
+    
+    <footer class="lcars-footer">
+      <div class="footer-block"></div>
+      <div class="footer-info">
+        <div class="footer-stat">
+          <div class="footer-stat-label">Credentials</div>
+          <div class="footer-stat-value" id="credentialCount" data-testid="credential-count">0</div>
+        </div>
+        <div class="footer-stat">
+          <div class="footer-stat-label">Signatures</div>
+          <div class="footer-stat-value" id="signatureCount" data-testid="signature-count">0</div>
+        </div>
+        <div class="footer-stat">
+          <div class="footer-stat-label">Verifications</div>
+          <div class="footer-stat-value" id="verificationCount" data-testid="verification-count">0</div>
+        </div>
+        <div class="footer-stat">
+          <div class="footer-stat-label">Key Algorithm</div>
+          <div class="footer-stat-value">ECDSA P-256</div>
+        </div>
+      </div>
+    </footer>
+  </div>
+  
+  <!-- Sign Modal -->
+  <div class="modal-overlay" id="signModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-title">Sign Data</span>
+        <button class="modal-close" onclick="closeModal('signModal')">×</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data to Sign</label>
+        <textarea class="form-input" id="signData" rows="4" placeholder="Enter data to sign..."></textarea>
+      </div>
+      <button class="form-submit" onclick="signData()" data-testid="submit-sign">Sign with Private Key</button>
+      <div id="signResult" style="margin-top: 20px;"></div>
+    </div>
+  </div>
+  
+  <!-- Verify Modal -->
+  <div class="modal-overlay" id="verifyModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-title">Verify Signature</span>
+        <button class="modal-close" onclick="closeModal('verifyModal')">×</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Original Data</label>
+        <textarea class="form-input" id="verifyData" rows="3" placeholder="Original data..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Signature (hex)</label>
+        <textarea class="form-input" id="verifySignature" rows="2" placeholder="Signature..."></textarea>
+      </div>
+      <button class="form-submit" onclick="verifySignature()" data-testid="submit-verify">Verify Signature</button>
+      <div id="verifyResult" style="margin-top: 20px;"></div>
+    </div>
+  </div>
+  
+  <!-- Credential Modal -->
+  <div class="modal-overlay" id="credentialModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-title">Issue Credential</span>
+        <button class="modal-close" onclick="closeModal('credentialModal')">×</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Credential Type</label>
+        <select class="form-input" id="credentialType">
+          <option value="ContentCreator">Content Creator</option>
+          <option value="Publisher">Publisher</option>
+          <option value="Verifier">Verifier</option>
+          <option value="Moderator">Moderator</option>
+          <option value="Custom">Custom</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Credential Name</label>
+        <input type="text" class="form-input" id="credentialName" placeholder="e.g., Video Creator Badge">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="credentialDesc" rows="2" placeholder="Describe this credential..."></textarea>
+      </div>
+      <button class="form-submit" onclick="issueCredential()" data-testid="submit-credential">Issue Credential</button>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // XHE DID IDENTITY SYSTEM - BROWSER-NATIVE
+    // ============================================
+    
+    // State
+    let identity = null;
+    let credentials = [];
+    let signatureCount = 0;
+    let verificationCount = 0;
+    
+    // Cryptographic utilities
+    const DIDCrypto = {
+      async generateKeyPair() {
+        return crypto.subtle.generateKey(
+          { name: 'ECDSA', namedCurve: 'P-256' },
+          true,
+          ['sign', 'verify']
+        );
+      },
+      
+      async exportPublicKey(key) {
+        const exported = await crypto.subtle.exportKey('spki', key);
+        return this.bufferToHex(exported);
+      },
+      
+      async exportPrivateKey(key) {
+        const exported = await crypto.subtle.exportKey('pkcs8', key);
+        return this.bufferToHex(exported);
+      },
+      
+      async importPublicKey(hex) {
+        const buffer = this.hexToBuffer(hex);
+        return crypto.subtle.importKey(
+          'spki',
+          buffer,
+          { name: 'ECDSA', namedCurve: 'P-256' },
+          true,
+          ['verify']
+        );
+      },
+      
+      async sign(privateKey, data) {
+        const encoded = new TextEncoder().encode(typeof data === 'string' ? data : JSON.stringify(data));
+        const signature = await crypto.subtle.sign(
+          { name: 'ECDSA', hash: 'SHA-256' },
+          privateKey,
+          encoded
+        );
+        return this.bufferToHex(signature);
+      },
+      
+      async verify(publicKey, signature, data) {
+        try {
+          const encoded = new TextEncoder().encode(typeof data === 'string' ? data : JSON.stringify(data));
+          const sigBuffer = this.hexToBuffer(signature);
+          return crypto.subtle.verify(
+            { name: 'ECDSA', hash: 'SHA-256' },
+            publicKey,
+            sigBuffer,
+            encoded
+          );
+        } catch (e) {
+          return false;
+        }
+      },
+      
+      async hash(data) {
+        const encoded = new TextEncoder().encode(typeof data === 'string' ? data : JSON.stringify(data));
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+        return this.bufferToHex(hashBuffer);
+      },
+      
+      bufferToHex(buffer) {
+        return Array.from(new Uint8Array(buffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      },
+      
+      hexToBuffer(hex) {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < bytes.length; i++) {
+          bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+        }
+        return bytes.buffer;
+      },
+      
+      generateMultibaseId(publicKeyHex) {
+        // Simplified multibase encoding for DID:key
+        return 'z' + btoa(publicKeyHex.substring(0, 32)).replace(/[+/=]/g, '');
+      }
+    };
+    
+    // DID Document structure
+    class DIDIdentity {
+      constructor(keyPair, publicKeyHex) {
+        this.keyPair = keyPair;
+        this.publicKeyHex = publicKeyHex;
+        this.did = `did:key:${DIDCrypto.generateMultibaseId(publicKeyHex)}`;
+        this.created = new Date().toISOString();
+        this.credentials = [];
+      }
+      
+      getDIDDocument() {
+        return {
+          '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/v1'],
+          id: this.did,
+          verificationMethod: [{
+            id: `${this.did}#keys-1`,
+            type: 'EcdsaSecp256r1VerificationKey2019',
+            controller: this.did,
+            publicKeyHex: this.publicKeyHex
+          }],
+          authentication: [`${this.did}#keys-1`],
+          assertionMethod: [`${this.did}#keys-1`],
+          created: this.created
+        };
+      }
+      
+      async sign(data) {
+        return DIDCrypto.sign(this.keyPair.privateKey, data);
+      }
+      
+      async verify(signature, data) {
+        return DIDCrypto.verify(this.keyPair.publicKey, signature, data);
+      }
+      
+      async addCredential(credential) {
+        credential.proof = {
+          type: 'EcdsaSecp256r1Signature2019',
+          created: new Date().toISOString(),
+          verificationMethod: `${this.did}#keys-1`,
+          proofPurpose: 'assertionMethod',
+          proofValue: await this.sign(credential)
+        };
+        this.credentials.push(credential);
+        return credential;
+      }
+    }
+    
+    // UI Functions
+    function log(message) {
+      const logOutput = document.getElementById('logOutput');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logOutput.appendChild(entry);
+      logOutput.scrollTop = logOutput.scrollHeight;
+    }
+    
+    function updateUI() {
+      if (identity) {
+        document.getElementById('identityStatus').textContent = 'Active Identity';
+        document.getElementById('identityDid').textContent = identity.did;
+        document.getElementById('identityName').textContent = 'Sovereign Identity';
+        document.getElementById('identityBadge').textContent = 'ACTIVE';
+        document.getElementById('identityBadge').style.background = 'var(--lcars-teal)';
+        document.getElementById('identityAvatar').textContent = identity.did.substring(8, 10).toUpperCase();
+        document.getElementById('publicKey').textContent = identity.publicKeyHex;
+        document.getElementById('keyFingerprint').textContent = identity.did.substring(8, 40);
+      }
+      
+      document.getElementById('credentialCount').textContent = credentials.length;
+      document.getElementById('signatureCount').textContent = signatureCount;
+      document.getElementById('verificationCount').textContent = verificationCount;
+      
+      renderCredentials();
+    }
+    
+    function renderCredentials() {
+      const list = document.getElementById('credentialList');
+      
+      if (credentials.length === 0) {
+        list.innerHTML = `
+          <div class="credential-item" style="opacity: 0.5;">
+            <div class="credential-icon">📜</div>
+            <div class="credential-info">
+              <h4>No Credentials Yet</h4>
+              <p>Generate an identity and add credentials</p>
+            </div>
+            <span class="credential-badge unverified">EMPTY</span>
+          </div>
+        `;
+        return;
+      }
+      
+      list.innerHTML = credentials.map((cred, i) => `
+        <div class="credential-item">
+          <div class="credential-icon">${getCredIcon(cred.type)}</div>
+          <div class="credential-info">
+            <h4>${cred.name}</h4>
+            <p>${cred.description} | Issued: ${new Date(cred.issuanceDate).toLocaleDateString()}</p>
+          </div>
+          <span class="credential-badge">${cred.proof ? 'VERIFIED' : 'PENDING'}</span>
+        </div>
+      `).join('');
+    }
+    
+    function getCredIcon(type) {
+      const icons = {
+        ContentCreator: '🎬',
+        Publisher: '📚',
+        Verifier: '✅',
+        Moderator: '🛡️',
+        Custom: '⭐'
+      };
+      return icons[type] || '📜';
+    }
+    
+    // Main Functions
+    async function generateIdentity() {
+      log('Generating new cryptographic identity...');
+      
+      const keyPair = await DIDCrypto.generateKeyPair();
+      const publicKeyHex = await DIDCrypto.exportPublicKey(keyPair.publicKey);
+      
+      identity = new DIDIdentity(keyPair, publicKeyHex);
+      credentials = [];
+      
+      log(`Identity created: ${identity.did}`);
+      log('Key pair generated using ECDSA P-256');
+      
+      // Store in localStorage
+      const exportData = {
+        did: identity.did,
+        publicKeyHex: identity.publicKeyHex,
+        created: identity.created,
+        credentials: []
+      };
+      localStorage.setItem('xhe-identity', JSON.stringify(exportData));
+      
+      updateUI();
+    }
+    
+    function showSignModal() {
+      if (!identity) {
+        log('ERROR: Generate an identity first');
+        return;
+      }
+      document.getElementById('signModal').classList.add('active');
+    }
+    
+    function showVerifyModal() {
+      document.getElementById('verifyModal').classList.add('active');
+    }
+    
+    function showCredentialModal() {
+      if (!identity) {
+        log('ERROR: Generate an identity first');
+        return;
+      }
+      document.getElementById('credentialModal').classList.add('active');
+    }
+    
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+    
+    async function signData() {
+      const data = document.getElementById('signData').value;
+      if (!data) {
+        log('ERROR: Enter data to sign');
+        return;
+      }
+      
+      const signature = await identity.sign(data);
+      signatureCount++;
+      
+      document.getElementById('signResult').innerHTML = `
+        <div class="key-box">
+          <div class="key-label">Signature (hex)</div>
+          <div class="key-value">${signature}</div>
+        </div>
+      `;
+      
+      log(`Data signed successfully (${signature.substring(0, 20)}...)`);
+      updateUI();
+    }
+    
+    async function verifySignature() {
+      const data = document.getElementById('verifyData').value;
+      const signature = document.getElementById('verifySignature').value;
+      
+      if (!data || !signature) {
+        log('ERROR: Enter both data and signature');
+        return;
+      }
+      
+      let valid = false;
+      if (identity) {
+        valid = await identity.verify(signature, data);
+      }
+      
+      verificationCount++;
+      
+      document.getElementById('verifyResult').innerHTML = `
+        <div style="text-align: center; padding: 20px; background: ${valid ? 'rgba(102, 204, 204, 0.2)' : 'rgba(204, 102, 102, 0.2)'}; border-radius: 10px;">
+          <div style="font-size: 48px;">${valid ? '✅' : '❌'}</div>
+          <div style="font-size: 18px; color: ${valid ? 'var(--lcars-teal)' : 'var(--lcars-red)'};">
+            Signature ${valid ? 'VALID' : 'INVALID'}
+          </div>
+        </div>
+      `;
+      
+      log(`Signature verification: ${valid ? 'VALID' : 'INVALID'}`);
+      updateUI();
+    }
+    
+    async function issueCredential() {
+      const type = document.getElementById('credentialType').value;
+      const name = document.getElementById('credentialName').value || `${type} Credential`;
+      const desc = document.getElementById('credentialDesc').value || `Self-issued ${type} credential`;
+      
+      const credential = {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        type: ['VerifiableCredential', type],
+        issuer: identity.did,
+        issuanceDate: new Date().toISOString(),
+        credentialSubject: {
+          id: identity.did,
+          type: type,
+          name: name
+        },
+        name: name,
+        description: desc
+      };
+      
+      const signedCred = await identity.addCredential(credential);
+      credentials.push(signedCred);
+      
+      log(`Credential issued: ${name}`);
+      closeModal('credentialModal');
+      updateUI();
+    }
+    
+    function exportIdentity() {
+      if (!identity) {
+        log('ERROR: No identity to export');
+        return;
+      }
+      
+      const exportData = {
+        did: identity.did,
+        didDocument: identity.getDIDDocument(),
+        publicKeyHex: identity.publicKeyHex,
+        created: identity.created,
+        credentials: credentials
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `xhe-did-${identity.did.substring(8, 16)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      log('Identity exported to file');
+    }
+    
+    function importIdentity() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        const text = await file.text();
+        const data = JSON.parse(text);
+        
+        log(`Imported identity: ${data.did}`);
+        credentials = data.credentials || [];
+        
+        // Note: Can't fully restore without private key
+        // This is for viewing/verification only
+        document.getElementById('identityStatus').textContent = 'Imported (View Only)';
+        document.getElementById('identityDid').textContent = data.did;
+        document.getElementById('publicKey').textContent = data.publicKeyHex;
+        
+        updateUI();
+      };
+      input.click();
+    }
+    
+    function revokeIdentity() {
+      if (!identity) {
+        log('ERROR: No identity to revoke');
+        return;
+      }
+      
+      if (confirm('Are you sure you want to revoke this identity? This cannot be undone.')) {
+        log(`Identity revoked: ${identity.did}`);
+        identity = null;
+        credentials = [];
+        localStorage.removeItem('xhe-identity');
+        
+        document.getElementById('identityStatus').textContent = 'No Identity';
+        document.getElementById('identityDid').textContent = 'Generate an identity to begin';
+        document.getElementById('identityName').textContent = 'Unknown Identity';
+        document.getElementById('identityBadge').textContent = 'INACTIVE';
+        document.getElementById('identityBadge').style.background = 'var(--lcars-gold)';
+        document.getElementById('identityAvatar').textContent = '?';
+        document.getElementById('publicKey').textContent = '--';
+        document.getElementById('keyFingerprint').textContent = '--';
+        
+        updateUI();
+      }
+    }
+    
+    // Time update
+    function updateTime() {
+      document.getElementById('headerTime').textContent = new Date().toLocaleTimeString();
+    }
+    
+    // Initialize
+    window.addEventListener('load', () => {
+      log('XHE DID Identity System ready');
+      
+      // Try to restore identity from localStorage
+      const stored = localStorage.getItem('xhe-identity');
+      if (stored) {
+        const data = JSON.parse(stored);
+        log(`Found stored identity: ${data.did}`);
+        // Note: Can't fully restore without regenerating keys
+      }
+      
+      setInterval(updateTime, 1000);
+      updateTime();
+    });
+    
+    // Close modals on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+      }
+    });
+  </script>
+</body>
+</html>

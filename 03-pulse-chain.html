@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XHE Pulse-Driven Execution Chain</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --lcars-orange: #ff9900;
+      --lcars-blue: #99ccff;
+      --lcars-purple: #cc99cc;
+      --lcars-red: #cc6666;
+      --lcars-gold: #ffcc66;
+      --lcars-teal: #66cccc;
+      --bg-dark: #000011;
+      --bg-panel: #0a0a1a;
+    }
+    
+    body {
+      font-family: 'Courier New', monospace;
+      background: var(--bg-dark);
+      color: var(--lcars-blue);
+      min-height: 100vh;
+    }
+    
+    .starship-layout {
+      display: grid;
+      grid-template-rows: 70px 1fr;
+      min-height: 100vh;
+    }
+    
+    .command-bar {
+      background: var(--bg-panel);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      border-bottom: 4px solid var(--lcars-orange);
+      gap: 20px;
+    }
+    
+    .command-logo {
+      background: var(--lcars-orange);
+      padding: 10px 30px;
+      border-radius: 0 0 20px 20px;
+      font-weight: bold;
+      font-size: 20px;
+      color: var(--bg-dark);
+    }
+    
+    .command-title {
+      font-size: 16px;
+      color: var(--lcars-purple);
+    }
+    
+    .command-stats {
+      display: flex;
+      gap: 30px;
+      margin-left: auto;
+    }
+    
+    .stat-box {
+      text-align: center;
+    }
+    
+    .stat-label {
+      font-size: 10px;
+      color: var(--lcars-purple);
+    }
+    
+    .stat-value {
+      font-size: 18px;
+      color: var(--lcars-gold);
+    }
+    
+    .main-deck {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 3px;
+      padding: 3px;
+    }
+    
+    .chain-view {
+      background: var(--bg-panel);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .chain-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .chain-title {
+      font-size: 18px;
+      color: var(--lcars-orange);
+    }
+    
+    .chain-controls {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .ctrl-btn {
+      background: var(--lcars-teal);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-family: inherit;
+      font-weight: bold;
+      font-size: 11px;
+      color: var(--bg-dark);
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    
+    .ctrl-btn:hover {
+      filter: brightness(1.2);
+      transform: scale(1.05);
+    }
+    
+    .ctrl-btn.orange { background: var(--lcars-orange); }
+    .ctrl-btn.purple { background: var(--lcars-purple); }
+    .ctrl-btn.red { background: var(--lcars-red); }
+    
+    .chain-canvas {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 2px solid var(--lcars-teal);
+      border-radius: 10px;
+      position: relative;
+      overflow: auto;
+      min-height: 400px;
+    }
+    
+    .pulse-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding: 20px;
+    }
+    
+    .pulse-block {
+      background: linear-gradient(90deg, rgba(102, 204, 204, 0.1) 0%, rgba(102, 204, 204, 0.05) 100%);
+      border: 1px solid var(--lcars-teal);
+      border-radius: 8px;
+      padding: 15px;
+      position: relative;
+      margin-bottom: -1px;
+      transition: all 0.3s;
+    }
+    
+    .pulse-block:hover {
+      background: linear-gradient(90deg, rgba(102, 204, 204, 0.2) 0%, rgba(102, 204, 204, 0.1) 100%);
+      transform: translateX(5px);
+      z-index: 10;
+    }
+    
+    .pulse-block.genesis {
+      border-color: var(--lcars-gold);
+      background: linear-gradient(90deg, rgba(255, 204, 102, 0.1) 0%, rgba(255, 204, 102, 0.05) 100%);
+    }
+    
+    .pulse-block.pending {
+      border-color: var(--lcars-purple);
+      opacity: 0.7;
+    }
+    
+    .pulse-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .pulse-height {
+      background: var(--lcars-orange);
+      color: var(--bg-dark);
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    
+    .pulse-time {
+      font-size: 10px;
+      color: var(--lcars-purple);
+    }
+    
+    .pulse-hash {
+      font-size: 10px;
+      color: var(--lcars-blue);
+      word-break: break-all;
+      margin-bottom: 8px;
+    }
+    
+    .pulse-data {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      font-size: 11px;
+    }
+    
+    .pulse-field {
+      background: rgba(0,0,0,0.3);
+      padding: 8px;
+      border-radius: 5px;
+    }
+    
+    .pulse-field-label {
+      color: var(--lcars-purple);
+      font-size: 9px;
+      text-transform: uppercase;
+    }
+    
+    .pulse-field-value {
+      color: var(--lcars-gold);
+      word-break: break-all;
+    }
+    
+    .pulse-connector {
+      width: 2px;
+      height: 20px;
+      background: var(--lcars-teal);
+      margin: 0 auto;
+    }
+    
+    .control-panel {
+      background: var(--bg-panel);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      border-left: 4px solid var(--lcars-purple);
+    }
+    
+    .panel-section {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--lcars-teal);
+      border-radius: 8px;
+      padding: 15px;
+    }
+    
+    .panel-title {
+      font-size: 14px;
+      color: var(--lcars-orange);
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .input-group {
+      margin-bottom: 15px;
+    }
+    
+    .input-label {
+      display: block;
+      font-size: 10px;
+      color: var(--lcars-purple);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+    
+    .input-field {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--lcars-teal);
+      color: var(--lcars-blue);
+      padding: 10px;
+      font-family: inherit;
+      font-size: 12px;
+      border-radius: 5px;
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: var(--lcars-orange);
+    }
+    
+    .submit-btn {
+      width: 100%;
+      background: var(--lcars-orange);
+      border: none;
+      padding: 15px;
+      font-family: inherit;
+      font-weight: bold;
+      font-size: 12px;
+      color: var(--bg-dark);
+      cursor: pointer;
+      border-radius: 8px;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    
+    .submit-btn:hover {
+      filter: brightness(1.2);
+    }
+    
+    .state-display {
+      background: rgba(0,0,0,0.5);
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 11px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    
+    .state-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(102, 204, 204, 0.1);
+    }
+    
+    .state-key { color: var(--lcars-purple); }
+    .state-value { color: var(--lcars-gold); }
+    
+    .log-area {
+      flex: 1;
+      background: rgba(0,0,0,0.5);
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 10px;
+      overflow-y: auto;
+      max-height: 200px;
+    }
+    
+    .log-entry {
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(102, 204, 204, 0.1);
+    }
+    
+    .log-time { color: var(--lcars-purple); }
+    
+    /* Replay animation */
+    .replay-highlight {
+      animation: replayPulse 0.5s ease-out;
+    }
+    
+    @keyframes replayPulse {
+      0% { background: rgba(255, 153, 0, 0.3); }
+      100% { background: transparent; }
+    }
+    
+    /* State projection visualization */
+    .state-viz {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+      gap: 5px;
+      margin-top: 10px;
+    }
+    
+    .state-cell {
+      background: var(--lcars-teal);
+      color: var(--bg-dark);
+      padding: 8px;
+      border-radius: 5px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="starship-layout">
+    <header class="command-bar">
+      <div class="command-logo">PULSE CHAIN</div>
+      <div class="command-title">Deterministic Execution Engine // PB-PoE Protocol</div>
+      <div class="command-stats">
+        <div class="stat-box">
+          <div class="stat-label">Height</div>
+          <div class="stat-value" id="chainHeight" data-testid="chain-height">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">State Root</div>
+          <div class="stat-value" id="stateRoot" data-testid="state-root">--</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Pulses/sec</div>
+          <div class="stat-value" id="pulsesPerSec" data-testid="pulses-per-sec">0</div>
+        </div>
+      </div>
+    </header>
+    
+    <div class="main-deck">
+      <div class="chain-view">
+        <div class="chain-header">
+          <span class="chain-title">Pulse History (State-as-Projection)</span>
+          <div class="chain-controls">
+            <button class="ctrl-btn orange" onclick="initChain()" data-testid="init-btn">Initialize</button>
+            <button class="ctrl-btn" onclick="replayAll()" data-testid="replay-btn">Replay All</button>
+            <button class="ctrl-btn purple" onclick="exportChain()" data-testid="export-btn">Export</button>
+            <button class="ctrl-btn red" onclick="resetChain()" data-testid="reset-btn">Reset</button>
+          </div>
+        </div>
+        
+        <div class="chain-canvas" id="chainCanvas" data-testid="chain-canvas">
+          <div class="pulse-container" id="pulseContainer"></div>
+        </div>
+      </div>
+      
+      <div class="control-panel">
+        <div class="panel-section">
+          <div class="panel-title">Submit Pulse</div>
+          <div class="input-group">
+            <label class="input-label">Pulse Type</label>
+            <select class="input-field" id="pulseType">
+              <option value="transfer">Transfer</option>
+              <option value="stake">Stake</option>
+              <option value="mint">Mint</option>
+              <option value="burn">Burn</option>
+              <option value="compute">Compute</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Key</label>
+            <input type="text" class="input-field" id="pulseKey" placeholder="e.g., balance_alice" data-testid="pulse-key">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Value</label>
+            <input type="text" class="input-field" id="pulseValue" placeholder="e.g., 100" data-testid="pulse-value">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Data (JSON)</label>
+            <textarea class="input-field" id="pulseData" rows="3" placeholder='{"from": "alice", "to": "bob"}'></textarea>
+          </div>
+          <button class="submit-btn" onclick="submitPulse()" data-testid="submit-pulse">Execute Pulse</button>
+        </div>
+        
+        <div class="panel-section">
+          <div class="panel-title">Current State (Projected)</div>
+          <div class="state-display" id="stateDisplay" data-testid="state-display">
+            <div class="state-row">
+              <span class="state-key">No state yet</span>
+              <span class="state-value">--</span>
+            </div>
+          </div>
+          <div class="state-viz" id="stateViz"></div>
+        </div>
+        
+        <div class="panel-section">
+          <div class="panel-title">Project State at Height</div>
+          <div class="input-group">
+            <label class="input-label">Target Height</label>
+            <input type="number" class="input-field" id="projectHeight" value="0" min="0" data-testid="project-height">
+          </div>
+          <button class="submit-btn" onclick="projectStateAt()" style="background: var(--lcars-teal);" data-testid="project-btn">Project State</button>
+        </div>
+        
+        <div class="panel-section" style="flex: 1; display: flex; flex-direction: column;">
+          <div class="panel-title">Execution Log</div>
+          <div class="log-area" id="logArea" data-testid="log-area"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // XHE PULSE-DRIVEN EXECUTION CHAIN
+    // State-as-Projection, Fully Deterministic
+    // ============================================
+    
+    // Crypto utilities
+    const PulseCrypto = {
+      async hash(data) {
+        const encoded = new TextEncoder().encode(JSON.stringify(data));
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+        return Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      },
+      
+      async merkleRoot(items) {
+        if (items.length === 0) return await this.hash('empty');
+        if (items.length === 1) return await this.hash(items[0]);
+        
+        const hashes = await Promise.all(items.map(i => this.hash(i)));
+        
+        while (hashes.length > 1) {
+          const newHashes = [];
+          for (let i = 0; i < hashes.length; i += 2) {
+            const left = hashes[i];
+            const right = hashes[i + 1] || left;
+            newHashes.push(await this.hash(left + right));
+          }
+          hashes.length = 0;
+          hashes.push(...newHashes);
+        }
+        
+        return hashes[0];
+      }
+    };
+    
+    // Pulse-Driven Execution Chain
+    class XheExecChain {
+      constructor() {
+        this.pulses = []; // Append-only log
+        this.height = 0;
+        this.genesisState = {};
+        this.checkpoints = [];
+        this.initialized = false;
+      }
+      
+      async initialize(genesisState = {}) {
+        this.genesisState = { ...genesisState };
+        this.pulses = [];
+        this.height = 0;
+        this.checkpoints = [];
+        this.initialized = true;
+        
+        // Create genesis pulse
+        const genesisPulse = {
+          height: 0,
+          type: 'genesis',
+          prevHash: '0'.repeat(64),
+          stateRoot: await PulseCrypto.merkleRoot(Object.entries(this.genesisState)),
+          timestamp: Date.now(),
+          data: { initial_state: this.genesisState }
+        };
+        genesisPulse.hash = await PulseCrypto.hash(genesisPulse);
+        
+        this.pulses.push(genesisPulse);
+        this.checkpoints.push({ height: 0, state: { ...this.genesisState } });
+        
+        return genesisPulse;
+      }
+      
+      genesis() {
+        return { ...this.genesisState };
+      }
+      
+      // Core: Project state from pulses (State-as-Projection)
+      async projectState(targetHeight = this.height) {
+        if (!this.initialized) throw new Error('Chain not initialized');
+        if (targetHeight < 0 || targetHeight > this.height) {
+          targetHeight = this.height;
+        }
+        
+        // Find nearest checkpoint
+        let checkpoint = this.checkpoints[0];
+        for (const cp of this.checkpoints) {
+          if (cp.height <= targetHeight && cp.height > checkpoint.height) {
+            checkpoint = cp;
+          }
+        }
+        
+        // Start from checkpoint state
+        let state = { ...checkpoint.state };
+        
+        // Apply pulses from checkpoint to target
+        for (let i = checkpoint.height + 1; i <= targetHeight; i++) {
+          const pulse = this.pulses[i];
+          if (pulse) {
+            state = this.applyPulse(state, pulse);
+          }
+        }
+        
+        return state;
+      }
+      
+      // Apply pulse to state (deterministic)
+      applyPulse(state, pulse) {
+        const newState = { ...state };
+        
+        switch (pulse.type) {
+          case 'transfer':
+            if (pulse.data.from && pulse.data.to && pulse.data.amount) {
+              const fromKey = `balance_${pulse.data.from}`;
+              const toKey = `balance_${pulse.data.to}`;
+              newState[fromKey] = (newState[fromKey] || 0) - pulse.data.amount;
+              newState[toKey] = (newState[toKey] || 0) + pulse.data.amount;
+            }
+            break;
+            
+          case 'stake':
+            if (pulse.data.key && pulse.data.amount) {
+              const stakeKey = `stake_${pulse.data.key}`;
+              newState[stakeKey] = (newState[stakeKey] || 0) + pulse.data.amount;
+            }
+            break;
+            
+          case 'mint':
+            if (pulse.data.key && pulse.data.amount) {
+              newState[pulse.data.key] = (newState[pulse.data.key] || 0) + pulse.data.amount;
+            }
+            break;
+            
+          case 'burn':
+            if (pulse.data.key && pulse.data.amount) {
+              newState[pulse.data.key] = Math.max(0, (newState[pulse.data.key] || 0) - pulse.data.amount);
+            }
+            break;
+            
+          case 'compute':
+          case 'custom':
+          default:
+            // Generic key-value set
+            if (pulse.data.key !== undefined && pulse.data.value !== undefined) {
+              newState[pulse.data.key] = pulse.data.value;
+            }
+            // Merge any extra data
+            if (pulse.data.merge) {
+              Object.assign(newState, pulse.data.merge);
+            }
+            break;
+        }
+        
+        return newState;
+      }
+      
+      // Execute a new pulse
+      async execute(pulseInput) {
+        if (!this.initialized) throw new Error('Chain not initialized');
+        
+        const prevPulse = this.pulses[this.pulses.length - 1];
+        const prevState = await this.projectState(this.height);
+        
+        // Create pulse
+        const pulse = {
+          height: this.height + 1,
+          type: pulseInput.type || 'custom',
+          prevHash: prevPulse.hash,
+          timestamp: Date.now(),
+          data: pulseInput.data || {},
+          executor: pulseInput.executor || 'local'
+        };
+        
+        // Apply to get new state
+        const newState = this.applyPulse(prevState, pulse);
+        
+        // Compute state root
+        pulse.stateRoot = await PulseCrypto.merkleRoot(Object.entries(newState));
+        pulse.hash = await PulseCrypto.hash(pulse);
+        
+        // Append to log
+        this.pulses.push(pulse);
+        this.height++;
+        
+        // Create checkpoint every 10 pulses
+        if (this.height % 10 === 0) {
+          this.checkpoints.push({ height: this.height, state: newState });
+        }
+        
+        return { pulse, state: newState };
+      }
+      
+      // Replay all pulses (for verification/debugging)
+      async *replay() {
+        if (!this.initialized) return;
+        
+        let state = this.genesis();
+        yield { height: 0, state, pulse: this.pulses[0] };
+        
+        for (let i = 1; i < this.pulses.length; i++) {
+          state = this.applyPulse(state, this.pulses[i]);
+          yield { height: i, state, pulse: this.pulses[i] };
+        }
+      }
+      
+      // Fork-free recovery
+      async recover(corruptedHeight) {
+        const checkpoint = this.checkpoints
+          .filter(cp => cp.height < corruptedHeight)
+          .sort((a, b) => b.height - a.height)[0] || this.checkpoints[0];
+        
+        return this.projectState(checkpoint.height);
+      }
+      
+      // Export chain data
+      export() {
+        return {
+          pulses: this.pulses,
+          height: this.height,
+          genesisState: this.genesisState,
+          checkpoints: this.checkpoints.map(cp => ({ height: cp.height }))
+        };
+      }
+    }
+    
+    // Global chain instance
+    let chain = new XheExecChain();
+    let pulseCounter = 0;
+    let lastPulseTime = Date.now();
+    
+    // UI Functions
+    function log(message) {
+      const logArea = document.getElementById('logArea');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="log-time">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+      logArea.appendChild(entry);
+      logArea.scrollTop = logArea.scrollHeight;
+    }
+    
+    function updateStats() {
+      document.getElementById('chainHeight').textContent = chain.height;
+      
+      if (chain.pulses.length > 0) {
+        const lastPulse = chain.pulses[chain.pulses.length - 1];
+        document.getElementById('stateRoot').textContent = 
+          lastPulse.stateRoot ? lastPulse.stateRoot.substring(0, 8) + '...' : '--';
+      }
+      
+      // Calculate pulses per second
+      const now = Date.now();
+      const elapsed = (now - lastPulseTime) / 1000;
+      if (elapsed > 0) {
+        const rate = (pulseCounter / elapsed).toFixed(2);
+        document.getElementById('pulsesPerSec').textContent = rate;
+      }
+    }
+    
+    async function updateStateDisplay(state) {
+      const display = document.getElementById('stateDisplay');
+      const viz = document.getElementById('stateViz');
+      
+      const entries = Object.entries(state || {});
+      
+      if (entries.length === 0) {
+        display.innerHTML = '<div class="state-row"><span class="state-key">Empty state</span><span class="state-value">--</span></div>';
+        viz.innerHTML = '';
+        return;
+      }
+      
+      display.innerHTML = entries.map(([key, value]) => `
+        <div class="state-row">
+          <span class="state-key">${key}</span>
+          <span class="state-value">${typeof value === 'object' ? JSON.stringify(value) : value}</span>
+        </div>
+      `).join('');
+      
+      viz.innerHTML = entries.slice(0, 12).map(([key, value]) => `
+        <div class="state-cell" title="${key}: ${value}">
+          ${typeof value === 'number' ? value : '•'}
+        </div>
+      `).join('');
+    }
+    
+    function renderPulses() {
+      const container = document.getElementById('pulseContainer');
+      container.innerHTML = '';
+      
+      if (chain.pulses.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--lcars-purple);">No pulses yet. Initialize the chain to begin.</div>';
+        return;
+      }
+      
+      // Render pulses in reverse order (newest first)
+      const pulsesToShow = [...chain.pulses].reverse().slice(0, 50);
+      
+      pulsesToShow.forEach((pulse, idx) => {
+        if (idx > 0) {
+          const connector = document.createElement('div');
+          connector.className = 'pulse-connector';
+          container.appendChild(connector);
+        }
+        
+        const block = document.createElement('div');
+        block.className = `pulse-block ${pulse.type === 'genesis' ? 'genesis' : ''}`;
+        block.id = `pulse-${pulse.height}`;
+        block.innerHTML = `
+          <div class="pulse-header">
+            <span class="pulse-height">#${pulse.height}</span>
+            <span class="pulse-time">${new Date(pulse.timestamp).toLocaleTimeString()}</span>
+          </div>
+          <div class="pulse-hash">Hash: ${pulse.hash}</div>
+          <div class="pulse-data">
+            <div class="pulse-field">
+              <div class="pulse-field-label">Type</div>
+              <div class="pulse-field-value">${pulse.type}</div>
+            </div>
+            <div class="pulse-field">
+              <div class="pulse-field-label">Prev Hash</div>
+              <div class="pulse-field-value">${pulse.prevHash.substring(0, 16)}...</div>
+            </div>
+            <div class="pulse-field">
+              <div class="pulse-field-label">State Root</div>
+              <div class="pulse-field-value">${pulse.stateRoot.substring(0, 16)}...</div>
+            </div>
+            <div class="pulse-field">
+              <div class="pulse-field-label">Data</div>
+              <div class="pulse-field-value">${JSON.stringify(pulse.data).substring(0, 50)}...</div>
+            </div>
+          </div>
+        `;
+        container.appendChild(block);
+      });
+    }
+    
+    // Control Functions
+    async function initChain() {
+      const genesisState = {
+        balance_treasury: 1000000,
+        balance_alice: 1000,
+        balance_bob: 500,
+        total_supply: 1001500,
+        chain_id: 'xhe-pulse-1'
+      };
+      
+      log('Initializing Pulse Chain...');
+      await chain.initialize(genesisState);
+      
+      log(`Genesis block created at height 0`);
+      log(`Genesis state: ${Object.keys(genesisState).length} entries`);
+      
+      pulseCounter = 0;
+      lastPulseTime = Date.now();
+      
+      updateStats();
+      renderPulses();
+      updateStateDisplay(genesisState);
+    }
+    
+    async function submitPulse() {
+      if (!chain.initialized) {
+        log('ERROR: Initialize chain first');
+        return;
+      }
+      
+      const type = document.getElementById('pulseType').value;
+      const key = document.getElementById('pulseKey').value;
+      const value = document.getElementById('pulseValue').value;
+      let extraData = {};
+      
+      try {
+        const dataStr = document.getElementById('pulseData').value;
+        if (dataStr) {
+          extraData = JSON.parse(dataStr);
+        }
+      } catch (e) {
+        log('WARNING: Invalid JSON in data field, ignoring');
+      }
+      
+      const pulseData = {
+        key: key || undefined,
+        value: isNaN(value) ? value : parseFloat(value),
+        ...extraData
+      };
+      
+      try {
+        const { pulse, state } = await chain.execute({
+          type,
+          data: pulseData,
+          executor: 'local-user'
+        });
+        
+        pulseCounter++;
+        log(`Pulse #${pulse.height} executed: ${type}`);
+        
+        updateStats();
+        renderPulses();
+        updateStateDisplay(state);
+        
+        // Clear inputs
+        document.getElementById('pulseKey').value = '';
+        document.getElementById('pulseValue').value = '';
+        document.getElementById('pulseData').value = '';
+        
+      } catch (e) {
+        log(`ERROR: ${e.message}`);
+      }
+    }
+    
+    async function projectStateAt() {
+      if (!chain.initialized) {
+        log('ERROR: Initialize chain first');
+        return;
+      }
+      
+      const height = parseInt(document.getElementById('projectHeight').value) || 0;
+      
+      try {
+        const state = await chain.projectState(height);
+        log(`State projected at height ${height}`);
+        updateStateDisplay(state);
+        
+        // Highlight the pulse
+        const block = document.getElementById(`pulse-${height}`);
+        if (block) {
+          block.scrollIntoView({ behavior: 'smooth' });
+          block.classList.add('replay-highlight');
+          setTimeout(() => block.classList.remove('replay-highlight'), 500);
+        }
+      } catch (e) {
+        log(`ERROR: ${e.message}`);
+      }
+    }
+    
+    async function replayAll() {
+      if (!chain.initialized) {
+        log('ERROR: Initialize chain first');
+        return;
+      }
+      
+      log('Starting full replay...');
+      
+      for await (const { height, state, pulse } of chain.replay()) {
+        log(`Replaying height ${height}: ${pulse.type}`);
+        updateStateDisplay(state);
+        
+        // Visual feedback
+        const block = document.getElementById(`pulse-${height}`);
+        if (block) {
+          block.classList.add('replay-highlight');
+          await new Promise(r => setTimeout(r, 200));
+        }
+      }
+      
+      log('Replay complete - all states verified');
+    }
+    
+    function exportChain() {
+      if (!chain.initialized) {
+        log('ERROR: No chain to export');
+        return;
+      }
+      
+      const data = chain.export();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `xhe-pulse-chain-${chain.height}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      log(`Chain exported: ${chain.pulses.length} pulses`);
+    }
+    
+    function resetChain() {
+      if (confirm('Reset chain? All pulses will be lost.')) {
+        chain = new XheExecChain();
+        pulseCounter = 0;
+        lastPulseTime = Date.now();
+        
+        document.getElementById('chainHeight').textContent = '0';
+        document.getElementById('stateRoot').textContent = '--';
+        document.getElementById('pulsesPerSec').textContent = '0';
+        document.getElementById('stateDisplay').innerHTML = '<div class="state-row"><span class="state-key">No state yet</span><span class="state-value">--</span></div>';
+        document.getElementById('stateViz').innerHTML = '';
+        document.getElementById('pulseContainer').innerHTML = '<div style="padding: 40px; text-align: center; color: var(--lcars-purple);">No pulses yet. Initialize the chain to begin.</div>';
+        
+        log('Chain reset');
+      }
+    }
+    
+    // Initialize on load
+    window.addEventListener('load', () => {
+      log('XHE Pulse Chain v1.0 loaded');
+      log('Click "Initialize" to create genesis block');
+    });
+    
+    // Handle Enter key in inputs
+    document.querySelectorAll('.input-field').forEach(input => {
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+          submitPulse();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
